@@ -2,12 +2,15 @@ import { db } from "./db";
 import {
   animals,
   observations,
+  transactions,
   type Animal,
   type InsertAnimal,
   type UpdateAnimalRequest,
   type Observation,
   type InsertObservation,
-  type AnimalWithObservations
+  type AnimalWithObservations,
+  type Transaction,
+  type InsertTransaction
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -19,6 +22,10 @@ export interface IStorage {
   deleteAnimal(id: number): Promise<boolean>;
   
   createObservation(animalId: number, observation: InsertObservation): Promise<Observation>;
+
+  getTransactions(): Promise<Transaction[]>;
+  createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  deleteTransaction(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -45,7 +52,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateAnimal(id: number, updates: UpdateAnimalRequest): Promise<Animal | undefined> {
     const [updated] = await db.update(animals)
-      .set({ ...updates, lastSeenAt: new Date() }) // automatically update lastSeenAt if edited
+      .set({ ...updates, lastSeenAt: new Date() })
       .where(eq(animals.id, id))
       .returning();
     return updated;
@@ -58,11 +65,22 @@ export class DatabaseStorage implements IStorage {
 
   async createObservation(animalId: number, insertObservation: InsertObservation): Promise<Observation> {
     const [observation] = await db.insert(observations).values({ ...insertObservation, animalId }).returning();
-    
-    // update lastSeenAt for the animal
     await db.update(animals).set({ lastSeenAt: new Date() }).where(eq(animals.id, animalId));
-    
     return observation;
+  }
+
+  async getTransactions(): Promise<Transaction[]> {
+    return await db.select().from(transactions).orderBy(desc(transactions.date));
+  }
+
+  async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
+    const [transaction] = await db.insert(transactions).values(insertTransaction).returning();
+    return transaction;
+  }
+
+  async deleteTransaction(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(transactions).where(eq(transactions.id, id)).returning();
+    return !!deleted;
   }
 }
 

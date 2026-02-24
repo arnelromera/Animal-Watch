@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertAnimalSchema, insertObservationSchema, animals, observations } from './schema';
+import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, animals, observations, transactions } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -69,6 +69,32 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+  },
+  finances: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/finances' as const,
+      responses: {
+        200: z.array(z.custom<typeof transactions.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/finances' as const,
+      input: insertTransactionSchema,
+      responses: {
+        201: z.custom<typeof transactions.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/finances/:id' as const,
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
   }
 };
 
@@ -87,3 +113,4 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
 export type AnimalInput = z.infer<typeof api.animals.create.input>;
 export type AnimalUpdateInput = z.infer<typeof api.animals.update.input>;
 export type ObservationInput = z.infer<typeof api.observations.create.input>;
+export type TransactionInput = z.infer<typeof api.finances.create.input>;
