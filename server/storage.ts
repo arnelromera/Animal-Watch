@@ -3,6 +3,7 @@ import {
   animals,
   observations,
   transactions,
+  feeds,
   type Animal,
   type InsertAnimal,
   type UpdateAnimalRequest,
@@ -10,7 +11,9 @@ import {
   type InsertObservation,
   type AnimalWithObservations,
   type Transaction,
-  type InsertTransaction
+  type InsertTransaction,
+  type Feed,
+  type InsertFeed
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -26,6 +29,9 @@ export interface IStorage {
   getTransactions(): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   deleteTransaction(id: number): Promise<boolean>;
+
+  getFeeds(): Promise<(Feed & { animal?: Animal })[]>;
+  createFeed(animalId: number, feed: InsertFeed): Promise<Feed>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -38,10 +44,12 @@ export class DatabaseStorage implements IStorage {
     if (animalRows.length === 0) return undefined;
     
     const obsRows = await db.select().from(observations).where(eq(observations.animalId, id)).orderBy(desc(observations.observedAt));
+    const feedRows = await db.select().from(feeds).where(eq(feeds.animalId, id)).orderBy(desc(feeds.fedAt));
     
     return {
       ...animalRows[0],
-      observations: obsRows
+      observations: obsRows,
+      feeds: feedRows
     };
   }
 
@@ -81,6 +89,36 @@ export class DatabaseStorage implements IStorage {
   async deleteTransaction(id: number): Promise<boolean> {
     const [deleted] = await db.delete(transactions).where(eq(transactions.id, id)).returning();
     return !!deleted;
+  }
+
+  async getFeeds(): Promise<(Feed & { animal?: Animal })[]> {
+    const rows = await db.select({
+      feed: feeds,
+      animal: animals
+    })
+    .from(feeds)
+    .leftJoin(animals, eq(feeds.animalId, animals.id))
+    .orderBy(desc(feeds.fedAt));
+
+    return rows.map(r => ({
+      ...r.feed,
+      animal: r.animal || undefined
+    }));
+  }
+
+  async createFeed(animalId: number, insertFeed: InsertFeed): Promise<Feed> {
+    const [feed] = await db.insert(feeds).values({ ...insertFeed, animalId }).returning();
+    
+    // Automatically create a transaction for the feed cost
+    await db.insert(transactions).values({
+      description: `Feed for animal #${animalId}: ${insertFeed.foodType}`,
+      amount: insertFeed.totalCost,
+      type: "expense",
+      category: "food",
+      date: new Date()
+    });
+
+    return feed;
   }
 }
 

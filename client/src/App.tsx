@@ -13,6 +13,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import Dashboard from "@/pages/dashboard";
 import Animals from "@/pages/animals";
 import AnimalDetails from "@/pages/animal-details";
+import Finances from "@/pages/finances";
+import Feeds from "@/pages/feeds";
 
 function Router() {
   return (
@@ -20,6 +22,8 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/animals" component={Animals} />
       <Route path="/animals/:id" component={AnimalDetails} />
+      <Route path="/finances" component={Finances} />
+      <Route path="/feeds" component={Feeds} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

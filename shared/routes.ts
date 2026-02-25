@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, animals, observations, transactions } from './schema';
+import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, insertFeedSchema, animals, observations, transactions, feeds } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -27,7 +27,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/animals/:id' as const,
       responses: {
-        200: z.custom<typeof animals.$inferSelect & { observations?: typeof observations.$inferSelect[] }>(),
+        200: z.custom<typeof animals.$inferSelect & { observations?: typeof observations.$inferSelect[], feeds?: typeof feeds.$inferSelect[] }>(),
         404: errorSchemas.notFound,
       },
     },
@@ -95,6 +95,24 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+  },
+  feeds: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/feeds' as const,
+      responses: {
+        200: z.array(z.custom<typeof feeds.$inferSelect & { animal?: typeof animals.$inferSelect }>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/animals/:animalId/feeds' as const,
+      input: insertFeedSchema.omit({ animalId: true }),
+      responses: {
+        201: z.custom<typeof feeds.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
   }
 };
 
@@ -114,3 +132,4 @@ export type AnimalInput = z.infer<typeof api.animals.create.input>;
 export type AnimalUpdateInput = z.infer<typeof api.animals.update.input>;
 export type ObservationInput = z.infer<typeof api.observations.create.input>;
 export type TransactionInput = z.infer<typeof api.finances.create.input>;
+export type FeedInput = z.infer<typeof api.feeds.create.input>;

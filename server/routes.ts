@@ -88,6 +88,63 @@ export async function registerRoutes(
     }
   });
 
+  app.get(api.finances.list.path, async (req, res) => {
+    const transactions = await storage.getTransactions();
+    res.json(transactions);
+  });
+
+  app.post(api.finances.create.path, async (req, res) => {
+    try {
+      const input = api.finances.create.input.parse(req.body);
+      const transaction = await storage.createTransaction(input);
+      res.status(201).json(transaction);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete(api.finances.delete.path, async (req, res) => {
+    const success = await storage.deleteTransaction(Number(req.params.id));
+    if (!success) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+    res.status(204).end();
+  });
+
+  app.get(api.feeds.list.path, async (req, res) => {
+    const feeds = await storage.getFeeds();
+    res.json(feeds);
+  });
+
+  app.post(api.feeds.create.path, async (req, res) => {
+    try {
+      const input = api.feeds.create.input.parse(req.body);
+      const animalId = Number(req.params.animalId);
+      const animal = await storage.getAnimal(animalId);
+      
+      if (!animal) {
+         return res.status(404).json({ message: 'Animal not found' });
+      }
+
+      const feed = await storage.createFeed(animalId, input);
+      res.status(201).json(feed);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // seed data
   const animalsList = await storage.getAnimals();
   if (animalsList.length === 0) {

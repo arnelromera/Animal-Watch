@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, PawPrint, Settings, Map, BookOpen } from "lucide-react";
+import { LayoutDashboard, PawPrint, Settings, Map, BookOpen, CreditCard, Utensils } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,8 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Wildlife Roster", url: "/animals", icon: PawPrint },
+  { title: "Feed Log", url: "/feeds", icon: Utensils },
+  { title: "Finances", url: "/finances", icon: CreditCard },
   { title: "Habitats", url: "/habitats", icon: Map, disabled: true },
   { title: "Field Guide", url: "/guide", icon: BookOpen, disabled: true },
   { title: "Settings", url: "/settings", icon: Settings, disabled: true },
