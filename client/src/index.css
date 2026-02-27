@@ -41,14 +41,14 @@
     --radius: 0.75rem;
 
     /* Sidebar Variables */
-    --sidebar-background: 142 71% 15%; /* Deep dark green */
-    --sidebar-foreground: 120 20% 95%;
-    --sidebar-primary: 142 60% 45%;
+    --sidebar-background: 0 0% 100%; /* Pure white background */
+    --sidebar-foreground: 142 50% 10%; /* Dark text */
+    --sidebar-primary: 142 71% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 142 50% 25%;
-    --sidebar-accent-foreground: 120 20% 95%;
-    --sidebar-border: 142 60% 20%;
-    --sidebar-ring: 142 60% 45%;
+    --sidebar-accent: 142 10% 90%; /* Slightly darker gray-green for better contrast on hover */
+    --sidebar-accent-foreground: 142 71% 20%; /* Darker green for text on hover */
+    --sidebar-border: 120 15% 85%; /* Darker border for visibility */
+    --sidebar-ring: 142 71% 28%;
 
     --elevate-1: rgba(20, 50, 30, 0.04);
     --elevate-2: rgba(20, 50, 30, 0.08);
