@@ -54,13 +54,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAnimal(insertAnimal: InsertAnimal): Promise<Animal> {
-    const [animal] = await db.insert(animals).values(insertAnimal).returning();
+    const [animal] = await db.insert(animals).values({
+      ...insertAnimal,
+      startDate: insertAnimal.startDate ? new Date(insertAnimal.startDate) : new Date(),
+    }).returning();
     return animal;
   }
 
   async updateAnimal(id: number, updates: UpdateAnimalRequest): Promise<Animal | undefined> {
     const [updated] = await db.update(animals)
-      .set({ ...updates, lastSeenAt: new Date() })
+      .set({ 
+        ...updates, 
+        lastSeenAt: new Date(),
+        startDate: updates.startDate ? new Date(updates.startDate) : undefined,
+      })
       .where(eq(animals.id, id))
       .returning();
     return updated;

@@ -5,13 +5,16 @@ import { z } from "zod";
 
 export const animals = pgTable("animals", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  species: text("species").notNull(),
-  age: integer("age"),
-  healthStatus: text("health_status").notNull().default("Unknown"), // e.g. Healthy, Sick, Injured, Unknown
+  name: text("name").notNull(), // This will be used for "Flock Name"
+  species: text("species").notNull(), // Select: pig, goat, chicken, cow
+  count: integer("count").notNull().default(1), // Number of animals
+  pricePerLivestock: numeric("price_per_livestock", { precision: 10, scale: 2 }).notNull().default("0"),
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  healthStatus: text("health_status").notNull().default("Healthy"),
   location: text("location").notNull(),
-  lastSeenAt: timestamp("last_seen_at").defaultNow(),
+  notes: text("notes"), // General notes
   imageUrl: text("image_url"),
+  lastSeenAt: timestamp("last_seen_at").defaultNow(),
 });
 
 export const observations = pgTable("observations", {

@@ -146,11 +146,33 @@ export default function AnimalDetails() {
                 <div className="flex items-center gap-3">
                   <Calendar className="h-4 w-4 text-primary" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Estimated Age</p>
-                    <p className="text-sm font-medium">{animal.age} years</p>
+                    <p className="text-xs text-muted-foreground">Start Date</p>
+                    <p className="text-sm font-medium">{animal.startDate ? format(new Date(animal.startDate), "MMM d, yyyy") : "N/A"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-primary">#</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Quantity</p>
+                    <p className="text-sm font-medium">{animal.count} head</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Price per Head</p>
+                    <p className="text-sm font-medium">${parseFloat(animal.pricePerLivestock || "0").toLocaleString()}</p>
                   </div>
                 </div>
               </div>
+              {animal.notes && (
+                <div className="mt-6 pt-6 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">Notes</p>
+                  <p className="text-sm text-foreground leading-relaxed">{animal.notes}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

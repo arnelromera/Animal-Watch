@@ -27,7 +27,9 @@ import { PawPrint, Loader2 } from "lucide-react";
 
 // Extend the schema to handle form string coercions
 const formSchema = insertAnimalSchema.extend({
-  age: z.coerce.number().min(0).optional().or(z.literal("").transform(() => undefined)),
+  count: z.coerce.number().min(1),
+  pricePerLivestock: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
+  startDate: z.coerce.date(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -37,6 +39,7 @@ interface AnimalFormProps {
   onSuccess?: () => void;
 }
 
+const SPECIES_OPTIONS = ["Pig", "Goat", "Chicken", "Cow"];
 const HEALTH_STATUSES = ["Healthy", "Injured", "Sick", "Monitoring", "Unknown"];
 
 export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
@@ -51,10 +54,13 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || "",
-      species: initialData?.species || "",
-      age: initialData?.age ?? undefined,
-      healthStatus: initialData?.healthStatus || "Unknown",
+      species: initialData?.species || "Pig",
+      count: initialData?.count ?? 1,
+      pricePerLivestock: initialData?.pricePerLivestock || "0",
+      startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
+      healthStatus: initialData?.healthStatus || "Healthy",
       location: initialData?.location || "",
+      notes: initialData?.notes || "",
       imageUrl: initialData?.imageUrl || "",
     },
   });
@@ -64,13 +70,13 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
       if (isEditing && initialData) {
         await updateMutation.mutateAsync({ id: initialData.id, data });
         toast({
-          title: "Animal updated",
+          title: "Livestock updated",
           description: `${data.name} has been successfully updated.`,
         });
       } else {
-        await createMutation.mutateAsync(data);
+        await createMutation.mutateAsync(data as any);
         toast({
-          title: "Animal created",
+          title: "Livestock registered",
           description: `${data.name} has been added to the roster.`,
         });
       }
@@ -93,9 +99,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Identifier / Name</FormLabel>
+                <FormLabel>Flock Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. Leo, Tracker #402" {...field} className="bg-background" />
+                  <Input placeholder="e.g. North Pasture Flock" {...field} className="bg-background" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -107,9 +113,32 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="species"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Species</FormLabel>
+                <FormLabel>Livestock Type</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {SPECIES_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="count"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of Animals</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. Panthera leo" {...field} className="bg-background" />
+                  <Input type="number" {...field} className="bg-background" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -118,12 +147,31 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
 
           <FormField
             control={form.control}
-            name="age"
+            name="pricePerLivestock"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estimated Age (Years)</FormLabel>
+                <FormLabel>Price per Head ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="Optional" {...field} value={field.value ?? ""} className="bg-background" />
+                  <Input type="number" step="0.01" {...field} className="bg-background" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="date" 
+                    value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
+                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                    className="bg-background" 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,9 +209,28 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Primary Location / Sector</FormLabel>
+              <FormLabel>Location / Pen</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. North Ridge, Sector 4" {...field} className="bg-background" />
+                <Input placeholder="e.g. Barn A, Pen 4" {...field} className="bg-background" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Additional details about this flock..." 
+                  {...field} 
+                  value={field.value ?? ""}
+                  className="bg-background resize-none" 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -175,7 +242,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Image URL (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="https://..." {...field} value={field.value ?? ""} className="bg-background" />
               </FormControl>
@@ -195,7 +262,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             ) : (
               <PawPrint className="mr-2 h-4 w-4" />
             )}
-            {isEditing ? "Save Changes" : "Register Animal"}
+            {isEditing ? "Save Changes" : "Register Flock"}
           </Button>
         </div>
       </form>
