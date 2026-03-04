@@ -44,9 +44,12 @@ export function AnimalCard({ animal }: { animal: Animal }) {
           <div className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             {animal.species}
           </div>
-          <h3 className="font-display text-xl font-bold text-card-foreground mb-3 group-hover:text-primary transition-colors">
+          <h3 className="font-display text-xl font-bold text-card-foreground mb-1 group-hover:text-primary transition-colors">
             {animal.name}
           </h3>
+          <div className="text-sm text-primary font-medium mb-3">
+            {animal.count} head
+          </div>
           
           <div className="mt-auto space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -56,7 +59,7 @@ export function AnimalCard({ animal }: { animal: Animal }) {
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary/60" />
               <span>
-                {lastSeen ? `Seen ${formatDistanceToNow(lastSeen, { addSuffix: true })}` : "No sightings yet"}
+                {lastSeen ? `Last fed ${formatDistanceToNow(lastSeen, { addSuffix: true })}` : "No feedings logged"}
               </span>
             </div>
           </div>

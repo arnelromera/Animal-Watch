@@ -29,22 +29,22 @@ export default function Animals() {
     <div className="p-6 md:p-8 max-w-7xl mx-auto h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground">Wildlife Roster</h1>
-          <p className="text-muted-foreground mt-2">Manage and track monitored animals in the reserve.</p>
+          <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground">Livestock Roster</h1>
+          <p className="text-muted-foreground mt-2">Manage and track your farm flocks and herds.</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="hover-elevate active-elevate-2 shadow-md shadow-primary/20">
               <Plus className="mr-2 h-5 w-5" />
-              Register Animal
+              Register Flock
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] border-border/50 shadow-xl">
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl">Register New Animal</DialogTitle>
+              <DialogTitle className="font-display text-2xl">Register New Flock</DialogTitle>
               <DialogDescription>
-                Enter the details of the new subject to begin monitoring.
+                Enter the details of the new livestock group to begin tracking.
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
