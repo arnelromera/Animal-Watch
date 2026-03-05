@@ -62,11 +62,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAnimal(id: number, updates: UpdateAnimalRequest): Promise<Animal | undefined> {
+    const preparedUpdates = { ...updates };
+    if (preparedUpdates.startDate && typeof preparedUpdates.startDate === 'string') {
+      preparedUpdates.startDate = new Date(preparedUpdates.startDate);
+    }
+
     const [updated] = await db.update(animals)
       .set({ 
-        ...updates, 
+        ...preparedUpdates, 
         lastSeenAt: new Date(),
-        startDate: updates.startDate ? new Date(updates.startDate) : undefined,
       })
       .where(eq(animals.id, id))
       .returning();

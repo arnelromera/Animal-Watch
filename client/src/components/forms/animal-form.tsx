@@ -29,7 +29,10 @@ import { PawPrint, Loader2 } from "lucide-react";
 const formSchema = insertAnimalSchema.extend({
   count: z.coerce.number().min(1),
   pricePerLivestock: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
-  startDate: z.coerce.date(),
+  startDate: z.preprocess((arg) => {
+    if (typeof arg === "string" || arg instanceof Date) return new Date(arg);
+    return arg;
+  }, z.date()),
 });
 
 type FormValues = z.infer<typeof formSchema>;

@@ -64,7 +64,9 @@ export const feedsRelations = relations(feeds, ({ one }) => ({
   }),
 }));
 
-export const insertAnimalSchema = createInsertSchema(animals).omit({ id: true });
+export const insertAnimalSchema = createInsertSchema(animals, {
+  startDate: z.coerce.date(),
+}).omit({ id: true });
 export const insertObservationSchema = createInsertSchema(observations).omit({ id: true, observedAt: true });
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, date: true });
 export const insertFeedSchema = createInsertSchema(feeds).omit({ id: true, fedAt: true });
