@@ -135,7 +135,7 @@ export default function Feeds() {
                   name="pricePerUnit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price per Unit ($)</FormLabel>
+                      <FormLabel>Price per Unit (₱)</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -143,7 +143,7 @@ export default function Feeds() {
                 />
                 <div className="p-3 bg-muted rounded-lg flex items-center justify-between">
                   <span className="text-sm font-medium">Estimated Total:</span>
-                  <span className="font-bold text-primary">${form.watch("totalCost")}</span>
+                  <span className="font-bold text-primary">₱{form.watch("totalCost")}</span>
                 </div>
                 <Button type="submit" className="w-full" disabled={mutation.isPending}>
                   {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -170,7 +170,7 @@ export default function Feeds() {
                       <p className="font-medium">{f.animal?.name || "Unknown Animal"} fed {f.foodType}</p>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1"><Scale className="h-3 w-3" /> {f.quantity} {f.unit}</span>
-                        <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> ${parseFloat(f.totalCost).toLocaleString()}</span>
+                        <span className="flex items-center gap-1"><span className="text-xs font-bold text-primary">₱</span> ₱{parseFloat(f.totalCost).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

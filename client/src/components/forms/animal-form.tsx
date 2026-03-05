@@ -153,7 +153,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="pricePerLivestock"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price per Head ($)</FormLabel>
+                <FormLabel>Price per Head (₱)</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" {...field} className="bg-background" />
                 </FormControl>

@@ -160,10 +160,12 @@ export default function AnimalDetails() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <DollarSign className="h-4 w-4 text-primary" />
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-primary">₱</span>
+                  </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Price per Head</p>
-                    <p className="text-sm font-medium">${parseFloat(animal.pricePerLivestock || "0").toLocaleString()}</p>
+                    <p className="text-sm font-medium">₱{parseFloat(animal.pricePerLivestock || "0").toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -241,7 +243,7 @@ export default function AnimalDetails() {
                               <p className="font-medium">{f.foodType}</p>
                               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                 <span className="flex items-center gap-1"><Scale className="h-3 w-3" /> {f.quantity} {f.unit}</span>
-                                <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> ${parseFloat(f.totalCost).toLocaleString()}</span>
+                                <span className="flex items-center gap-1"><span className="text-xs font-bold text-primary">₱</span> ₱{parseFloat(f.totalCost).toLocaleString()}</span>
                               </div>
                             </div>
                           </div>

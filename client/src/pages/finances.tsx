@@ -67,7 +67,7 @@ export default function Finances() {
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${balance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              ${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              ₱{balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
             <Wallet className="h-4 w-4 mt-2 text-muted-foreground" />
           </CardContent>
@@ -77,7 +77,7 @@ export default function Finances() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-600">${totalIncome.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-emerald-600">₱{totalIncome.toLocaleString()}</div>
             <TrendingUp className="h-4 w-4 mt-2 text-emerald-500" />
           </CardContent>
         </Card>
@@ -86,7 +86,7 @@ export default function Finances() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">${totalExpenses.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-red-600">₱{totalExpenses.toLocaleString()}</div>
             <TrendingDown className="h-4 w-4 mt-2 text-red-500" />
           </CardContent>
         </Card>
@@ -122,7 +122,7 @@ export default function Finances() {
                     <p className="text-sm text-muted-foreground">{format(new Date(t.date), "PPp")} • {t.category}</p>
                   </div>
                   <div className={`font-bold ${t.type === "income" ? "text-emerald-600" : "text-red-600"}`}>
-                    {t.type === "income" ? "+" : "-"}${parseFloat(t.amount).toLocaleString()}
+                    {t.type === "income" ? "+" : "-"}₱{parseFloat(t.amount).toLocaleString()}
                   </div>
                 </div>
               ))}
@@ -153,7 +153,7 @@ export default function Finances() {
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
+                      <FormLabel>Amount (₱)</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>

@@ -96,11 +96,11 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Expenses</CardTitle>
             <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <CreditCard className="h-4 w-4 text-amber-500" />
+              <span className="text-xs font-bold text-amber-500">₱</span>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-display font-bold text-amber-600">${totalExpenses.toLocaleString()}</div>
+            <div className="text-3xl font-display font-bold text-amber-600">₱{totalExpenses.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">Total operational cost</p>
           </CardContent>
         </Card>
@@ -144,7 +144,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="text-sm font-bold text-amber-600">
-                        -${parseFloat(f.totalCost).toLocaleString()}
+                        -₱{parseFloat(f.totalCost).toLocaleString()}
                       </div>
                     </div>
                   ))}
