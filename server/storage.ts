@@ -26,7 +26,7 @@ export interface IStorage {
   
   createObservation(animalId: number, observation: InsertObservation): Promise<Observation>;
 
-  getTransactions(): Promise<Transaction[]>;
+  getTransactions(): Promise<(Transaction & { animal?: Animal })[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   deleteTransaction(id: number): Promise<boolean>;
 
@@ -45,11 +45,13 @@ export class DatabaseStorage implements IStorage {
     
     const obsRows = await db.select().from(observations).where(eq(observations.animalId, id)).orderBy(desc(observations.observedAt));
     const feedRows = await db.select().from(feeds).where(eq(feeds.animalId, id)).orderBy(desc(feeds.fedAt));
+    const transactionRows = await db.select().from(transactions).where(eq(transactions.animalId, id)).orderBy(desc(transactions.date));
     
     return {
       ...animalRows[0],
       observations: obsRows,
-      feeds: feedRows
+      feeds: feedRows,
+      transactions: transactionRows
     };
   }
 
@@ -88,8 +90,19 @@ export class DatabaseStorage implements IStorage {
     return observation;
   }
 
-  async getTransactions(): Promise<Transaction[]> {
-    return await db.select().from(transactions).orderBy(desc(transactions.date));
+  async getTransactions(): Promise<(Transaction & { animal?: Animal })[]> {
+    const rows = await db.select({
+      transaction: transactions,
+      animal: animals
+    })
+    .from(transactions)
+    .leftJoin(animals, eq(transactions.animalId, animals.id))
+    .orderBy(desc(transactions.date));
+
+    return rows.map(r => ({
+      ...r.transaction,
+      animal: r.animal || undefined
+    }));
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
@@ -122,10 +135,13 @@ export class DatabaseStorage implements IStorage {
     
     // Automatically create a transaction for the feed cost
     await db.insert(transactions).values({
-      description: `Feed for animal #${animalId}: ${insertFeed.foodType}`,
+      animalId,
+      description: `Feed: ${insertFeed.foodType}`,
       amount: insertFeed.totalCost,
       type: "expense",
-      category: "food",
+      category: "feed",
+      units: insertFeed.quantity,
+      pricePerUnit: insertFeed.pricePerUnit,
       date: new Date()
     });
 

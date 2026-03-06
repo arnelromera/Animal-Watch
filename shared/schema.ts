@@ -27,10 +27,15 @@ export const observations = pgTable("observations", {
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
+  animalId: integer("animal_id").references(() => animals.id, { onDelete: "set null" }),
   description: text("description").notNull(),
-  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // using numeric for currency
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   type: text("type").notNull(), // 'income' or 'expense'
-  category: text("category").notNull(), // e.g., 'food', 'medical', 'equipment', 'donation'
+  category: text("category").notNull(),
+  units: numeric("units", { precision: 10, scale: 2 }).default("1"),
+  pricePerUnit: numeric("price_per_unit", { precision: 10, scale: 2 }).default("0"),
+  attachments: text("attachments"), // Comma separated URLs
+  note: text("note"),
   date: timestamp("date").defaultNow().notNull(),
 });
 
@@ -48,11 +53,19 @@ export const feeds = pgTable("feeds", {
 export const animalsRelations = relations(animals, ({ many }) => ({
   observations: many(observations),
   feeds: many(feeds),
+  transactions: many(transactions),
 }));
 
 export const observationsRelations = relations(observations, ({ one }) => ({
   animal: one(animals, {
     fields: [observations.animalId],
+    references: [animals.id],
+  }),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  animal: one(animals, {
+    fields: [transactions.animalId],
     references: [animals.id],
   }),
 }));
@@ -68,7 +81,9 @@ export const insertAnimalSchema = createInsertSchema(animals, {
   startDate: z.coerce.date(),
 }).omit({ id: true });
 export const insertObservationSchema = createInsertSchema(observations).omit({ id: true, observedAt: true });
-export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, date: true });
+export const insertTransactionSchema = createInsertSchema(transactions, {
+  date: z.coerce.date(),
+}).omit({ id: true });
 export const insertFeedSchema = createInsertSchema(feeds).omit({ id: true, fedAt: true });
 
 export type Animal = typeof animals.$inferSelect;
@@ -87,4 +102,5 @@ export type InsertFeed = z.infer<typeof insertFeedSchema>;
 export type AnimalWithObservations = Animal & {
   observations?: Observation[];
   feeds?: Feed[];
+  transactions?: Transaction[];
 };
