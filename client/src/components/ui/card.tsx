@@ -35,7 +35,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className="tracking-tight text-sm font-medium text-[#02e853]"
+    className="tracking-tight text-sm font-medium text-[#7dc995]"
     {...props}
   />
 ))
