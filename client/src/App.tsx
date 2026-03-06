@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NotFound from "@/pages/not-found";
+import { PawPrint } from "lucide-react";
 
 // Components
 import { AppSidebar } from "@/components/app-sidebar";
@@ -45,6 +46,14 @@ function App() {
             <div className="flex flex-col flex-1 overflow-hidden">
               <header className="h-16 flex items-center px-4 border-b border-border/50 shrink-0 bg-background/95 backdrop-blur-sm z-10 sticky top-0">
                 <SidebarTrigger className="hover-elevate hover:text-primary transition-colors" />
+                <div className="ml-4 flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg nature-gradient flex items-center justify-center shadow-md rotate-3">
+                    <PawPrint className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <h1 className="text-xl font-display font-black tracking-tighter text-foreground">
+                    AR <span className="text-primary">FARM</span> MONITORING
+                  </h1>
+                </div>
                 <div className="ml-auto flex items-center">
                   <div className="h-8 w-8 rounded-full nature-gradient flex items-center justify-center text-primary-foreground text-xs font-bold shadow-sm">
                     RD

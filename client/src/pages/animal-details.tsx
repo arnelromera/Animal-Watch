@@ -50,9 +50,11 @@ export default function AnimalDetails() {
   if (isLoading) return <div className="p-8 animate-pulse"><div className="h-10 w-32 bg-muted rounded mb-8"></div><div className="h-96 bg-muted rounded-xl"></div></div>;
   
   if (error || !animal) {
+    if (isLoading) return <div className="p-8 animate-pulse"><div className="h-10 w-32 bg-muted rounded mb-8"></div><div className="h-96 bg-muted rounded-xl"></div></div>;
     return (
       <div className="p-8 text-center mt-20">
-        <h2 className="text-2xl font-bold mb-4 text-foreground">Animal not found</h2>
+        <h2 className="text-2xl font-bold mb-4 text-foreground">Batch not found</h2>
+        <p className="text-muted-foreground mb-6">The livestock record you're looking for might have been moved or deleted.</p>
         <Button onClick={() => setLocation("/animals")} variant="outline">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Roster
         </Button>
