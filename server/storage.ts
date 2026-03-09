@@ -60,6 +60,20 @@ export class DatabaseStorage implements IStorage {
       ...insertAnimal,
       startDate: insertAnimal.startDate ? new Date(insertAnimal.startDate) : new Date(),
     }).returning();
+    
+    // Automatically create a transaction for the livestock purchase
+    const totalCost = (parseFloat(insertAnimal.pricePerLivestock || "0") * (insertAnimal.count || 1)).toString();
+    await db.insert(transactions).values({
+      animalId: animal.id,
+      description: `Purchase of ${animal.count} ${animal.species}`,
+      amount: totalCost,
+      type: "expense",
+      category: "purchase of livestock",
+      units: insertAnimal.count || 1,
+      pricePerUnit: insertAnimal.pricePerLivestock || "0",
+      date: new Date()
+    });
+
     return animal;
   }
 
