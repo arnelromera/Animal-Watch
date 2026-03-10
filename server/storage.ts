@@ -94,6 +94,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAnimal(id: number): Promise<boolean> {
+    // Also delete associated transactions
+    await db.delete(transactions).where(eq(transactions.animalId, id));
     const [deleted] = await db.delete(animals).where(eq(animals.id, id)).returning();
     return !!deleted;
   }
