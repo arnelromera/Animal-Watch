@@ -411,7 +411,7 @@ export default function Users() {
                 onClick={() => setIsDialogOpen(true)}
               >
                 <UserPlus className="mr-2 h-5 w-5" />
-                Add First User
+                Add First User a
               </Button>
             </div>
           )}
