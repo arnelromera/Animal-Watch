@@ -1,0 +1,128 @@
+# Animal-Watch Project Coding Rules (Simplified)
+
+## 1. Tech Stack
+
+* **TypeScript: ^5.3.0** – used in both frontend and backend. Avoid `any`.
+* **React: ^18.3.0** – use functional components with Hooks only.
+* **Node.js: >=20.0.0** – server runtime for backend.
+* **Express: ^4.19.0** – backend framework for APIs.
+* **PostgreSQL: >=15** – primary relational database.
+* **Drizzle ORM: ^1.5.0** – all database interactions must go through this.
+* **Tailwind CSS: ^3.3.2** – for styling; follow the “Net” and “Glass-morphism” aesthetic.
+* **Shadcn UI: latest stable version compatible with React 18** – use for UI components.
+* **lucide-react: ^0.268.0** – system icons.
+* **Zod: ^4.30.0** – form and API validation.
+
+## 2. Project Structure
+
+* Keep frontend and backend logic separated.
+* Place reusable logic in hooks, services, or utilities.
+* Shared schemas and types must be stored in the `shared` folder.
+* Database schema definitions must remain in `shared/schema.ts`.
+
+## 3. Naming Conventions
+
+* Use **kebab-case** for file names.
+* Use **PascalCase** for React components and types.
+* Use **camelCase** for variables and functions.
+* Use **UPPER_SNAKE_CASE** for constants.
+* Clearly differentiate between **Livestock** and **Wildlife** in naming to avoid data confusion.
+
+## 4. Component Standards
+
+* Keep components small and reusable.
+* Split large components into smaller components or hooks.
+* Use the project's **Primary Green** for main action buttons.
+* Use the `.glass-card` class for frosted-glass style cards.
+
+## 5. Custom Hook Rules
+
+* Extract shared logic into custom hooks.
+* Hooks must start with **use** and not contain UI logic.
+
+## 6. API Architecture
+
+* Follow the structure: **Route → Controller → Service → Database**.
+* Controllers handle request and response logic only.
+* Services contain business logic.
+* Database access must only occur through Drizzle ORM.
+
+## 7. API Response Format
+
+* All API responses must follow a consistent structure.
+* Responses must clearly indicate success or failure.
+
+## 8. Error Handling
+
+* Use proper error handling in all backend logic.
+* Do not expose internal server errors to users.
+* Return clear and consistent error messages.
+
+## 9. Validation
+
+* Validate all user input using **Zod** before processing.
+* Do not trust client-side data.
+
+## 10. Database Rules
+
+* Define relationships using the Drizzle relations API.
+* Use strict null checks for optional fields.
+* Optimize queries and avoid unnecessary database calls.
+
+## 11. State Management
+
+* Prefer local component state first.
+* Use custom hooks for shared logic.
+* Avoid unnecessary global state.
+
+## 12. UI Layout
+
+* Pages must follow a consistent layout structure.
+* Header should remain stable or sticky.
+* Main content should be scrollable.
+
+## 13. Global Display Rule
+
+* Use the `.scrollbar-hide` utility for main scroll containers to keep the interface clean and consistent.
+
+## 14. Performance
+
+* Avoid unnecessary re-renders in React.
+* Optimize database queries.
+* Use pagination or limits for large datasets.
+
+## 15. Security
+
+* Validate and sanitize all user inputs.
+* Protect sensitive routes with authentication.
+* Never expose secrets or credentials in the codebase.
+
+## 16. Environment Configuration
+
+* Store all secrets in environment variables.
+* Do not commit `.env` files to the repository.
+
+## 17. Logging
+
+* Log important system events and actions.
+* Include timestamps and relevant identifiers when logging.
+
+## 18. Testing
+
+* Major features should include tests.
+* Ensure critical functionality is verified before deployment.
+
+## 19. Code Quality
+
+* Use automated tools for linting and formatting.
+* Keep code clean, readable, and consistent.
+
+## 20. Git Practices
+
+* Use clear and structured commit messages.
+* Keep commits focused on a single change or feature.
+
+## 21. Documentation
+
+* Document major features, APIs, and schema changes.
+* Keep project documentation updated.

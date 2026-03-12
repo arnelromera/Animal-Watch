@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertAnimalSchema } from "@shared/schema";
+import { insertAnimalSchema, type Category } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,11 +24,18 @@ import { type Animal } from "@shared/schema";
 import { useCreateAnimal, useUpdateAnimal } from "@/hooks/use-animals";
 import { useToast } from "@/hooks/use-toast";
 import { PawPrint, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-// Extend the schema to handle form string coercions
+// Extend the schema to handle form string coercions and add stricter validations
 const formSchema = insertAnimalSchema.extend({
-  count: z.coerce.number().min(1),
-  pricePerLivestock: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid price format"),
+  name: z.string().min(1, "Flock Name is required").max(100, "Name is too long"),
+  species: z.string().min(1, "Livestock Type is required"),
+  count: z.coerce.number().min(1, "At least 1 animal is required"),
+  pricePerLivestock: z.string()
+    .min(1, "Price per Head is required")
+    .regex(/^\d+(\.\d{1,2})?$/, "Invalid price format")
+    .refine((val) => parseFloat(val) > 0, "Price must be greater than 0"),
+  location: z.string().min(1, "Location is required"),
   startDate: z.preprocess((arg) => {
     if (typeof arg === "string" || arg instanceof Date) return new Date(arg);
     return arg;
@@ -42,13 +49,18 @@ interface AnimalFormProps {
   onSuccess?: () => void;
 }
 
-const SPECIES_OPTIONS = ["Pig", "Goat", "Chicken", "Cow"];
-const HEALTH_STATUSES = ["Healthy", "Injured", "Sick", "Monitoring", "Unknown"];
-
 export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
   const { toast } = useToast();
   const createMutation = useCreateAnimal();
   const updateMutation = useUpdateAnimal();
+
+  // Fetch dynamic categories
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
+
+  const speciesOptions = categories?.filter(c => c.type === 'species') || [];
+  const healthStatuses = categories?.filter(c => c.type === 'health_status') || [];
 
   const isEditing = !!initialData;
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -57,9 +69,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || "",
-      species: initialData?.species || "Pig",
+      species: initialData?.species || "",
       count: initialData?.count ?? 1,
-      pricePerLivestock: initialData?.pricePerLivestock || "0",
+      pricePerLivestock: initialData?.pricePerLivestock || "",
       startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
       healthStatus: initialData?.healthStatus || "Healthy",
       location: initialData?.location || "",
@@ -102,7 +114,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Flock Name</FormLabel>
+                <FormLabel>Flock Name <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. North Pasture Flock" {...field} className="bg-background" />
                 </FormControl>
@@ -116,17 +128,20 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="species"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Livestock Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormLabel>Livestock Type <span className="text-destructive">*</span></FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {SPECIES_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    {speciesOptions.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
                     ))}
+                    {speciesOptions.length === 0 && (
+                      <SelectItem value="Pig">Pig</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -139,7 +154,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="count"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Number of Animals</FormLabel>
+                <FormLabel>Number of Animals <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <Input type="number" {...field} className="bg-background" />
                 </FormControl>
@@ -153,7 +168,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="pricePerLivestock"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price per Head (₱)</FormLabel>
+                <FormLabel>Price per Head (₱) <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" {...field} className="bg-background" />
                 </FormControl>
@@ -187,18 +202,21 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Health Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Select a status" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {HEALTH_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
+                    {healthStatuses.map((status) => (
+                      <SelectItem key={status.id} value={status.name}>
+                        {status.name}
                       </SelectItem>
                     ))}
+                    {healthStatuses.length === 0 && (
+                      <SelectItem value="Healthy">Healthy</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -212,7 +230,7 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Location / Pen</FormLabel>
+              <FormLabel>Location / Pen <span className="text-destructive">*</span></FormLabel>
               <FormControl>
                 <Input placeholder="e.g. Barn A, Pen 4" {...field} className="bg-background" />
               </FormControl>

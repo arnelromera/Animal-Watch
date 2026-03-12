@@ -4,6 +4,9 @@ import {
   observations,
   transactions,
   feeds,
+  users,
+  categories,
+  feedInventory,
   type Animal,
   type InsertAnimal,
   type UpdateAnimalRequest,
@@ -13,7 +16,13 @@ import {
   type Transaction,
   type InsertTransaction,
   type Feed,
-  type InsertFeed
+  type InsertFeed,
+  type User,
+  type InsertUser,
+  type Category,
+  type InsertCategory,
+  type FeedInventory,
+  type InsertFeedInventory
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
@@ -32,6 +41,22 @@ export interface IStorage {
 
   getFeeds(): Promise<(Feed & { animal?: Animal })[]>;
   createFeed(animalId: number, feed: InsertFeed): Promise<Feed>;
+
+  getUsers(): Promise<User[]>;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+
+  getCategories(): Promise<Category[]>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  deleteCategory(id: number): Promise<boolean>;
+
+  getFeedInventory(): Promise<FeedInventory[]>;
+  updateFeedStock(id: number, quantity: string): Promise<FeedInventory | undefined>;
+  createFeedInventory(item: InsertFeedInventory): Promise<FeedInventory>;
+  deleteFeedInventory(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -69,9 +94,9 @@ export class DatabaseStorage implements IStorage {
       amount: totalCost,
       type: "expense",
       category: "purchase of livestock",
-      units: insertAnimal.count || 1,
+      units: (insertAnimal.count || 1).toString(),
       pricePerUnit: insertAnimal.pricePerLivestock || "0",
-      date: new Date()
+      date: animal.startDate
     });
 
     return animal;
@@ -94,7 +119,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAnimal(id: number): Promise<boolean> {
-    // Also delete associated transactions
     await db.delete(transactions).where(eq(transactions.animalId, id));
     const [deleted] = await db.delete(animals).where(eq(animals.id, id)).returning();
     return !!deleted;
@@ -123,6 +147,19 @@ export class DatabaseStorage implements IStorage {
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const [transaction] = await db.insert(transactions).values(insertTransaction).returning();
+
+    if (transaction.type === 'income' && transaction.animalId) {
+      const animalRows = await db.select().from(animals).where(eq(animals.id, transaction.animalId));
+      if (animalRows.length > 0) {
+        const deduction = Math.floor(parseFloat(transaction.units || "1"));
+        const newCount = Math.max(0, animalRows[0].count - deduction);
+
+        await db.update(animals)
+          .set({ count: newCount })
+          .where(eq(animals.id, transaction.animalId));
+      }
+    }
+
     return transaction;
   }
 
@@ -149,6 +186,18 @@ export class DatabaseStorage implements IStorage {
   async createFeed(animalId: number, insertFeed: InsertFeed): Promise<Feed> {
     const [feed] = await db.insert(feeds).values({ ...insertFeed, animalId }).returning();
     
+    // Update inventory if it exists
+    const inventory = await db.select().from(feedInventory).where(eq(feedInventory.name, insertFeed.foodType));
+    if (inventory.length > 0) {
+      const currentQty = parseFloat(inventory[0].quantity);
+      const consumedQty = parseFloat(insertFeed.quantity);
+      const newQty = Math.max(0, currentQty - consumedQty).toString();
+
+      await db.update(feedInventory)
+        .set({ quantity: newQty, updatedAt: new Date() })
+        .where(eq(feedInventory.id, inventory[0].id));
+    }
+
     // Automatically create a transaction for the feed cost
     await db.insert(transactions).values({
       animalId,
@@ -158,10 +207,78 @@ export class DatabaseStorage implements IStorage {
       category: "feed",
       units: insertFeed.quantity,
       pricePerUnit: insertFeed.pricePerUnit,
-      date: new Date()
+      date: feed.fedAt
     });
 
     return feed;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.updatedAt));
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const [updated] = await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(users).where(eq(users.id, id)).returning();
+    return !!deleted;
+  }
+
+  async getCategories(): Promise<Category[]> {
+    return await db.select().from(categories);
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db.insert(categories).values(insertCategory).returning();
+    return category;
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(categories).where(eq(categories.id, id)).returning();
+    return !!deleted;
+  }
+
+  async getFeedInventory(): Promise<FeedInventory[]> {
+    return await db.select().from(feedInventory).orderBy(desc(feedInventory.updatedAt));
+  }
+
+  async updateFeedStock(id: number, quantity: string): Promise<FeedInventory | undefined> {
+    const [updated] = await db.update(feedInventory)
+      .set({ quantity, updatedAt: new Date() })
+      .where(eq(feedInventory.id, id))
+      .returning();
+    return updated;
+  }
+
+  async createFeedInventory(item: InsertFeedInventory): Promise<FeedInventory> {
+    const [newItem] = await db.insert(feedInventory).values(item).returning();
+    return newItem;
+  }
+
+  async deleteFeedInventory(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(feedInventory).where(eq(feedInventory.id, id)).returning();
+    return !!deleted;
   }
 }
 

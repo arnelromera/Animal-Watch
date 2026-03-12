@@ -1,70 +1,72 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, PawPrint, Settings, Map, BookOpen, CreditCard, Utensils } from "lucide-react";
+import { LayoutDashboard, PawPrint, Users, CreditCard, Utensils } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Wildlife Roster", url: "/animals", icon: PawPrint },
-  { title: "Feed Log", url: "/feeds", icon: Utensils },
+  { title: "Livestock Roster", url: "/animals", icon: PawPrint },
+  { title: "Nutrition & Feeding", url: "/feeds", icon: Utensils },
   { title: "Finances", url: "/finances", icon: CreditCard },
-  { title: "Habitats", url: "/habitats", icon: Map, disabled: true },
-  { title: "Field Guide", url: "/guide", icon: BookOpen, disabled: true },
-  { title: "Settings", url: "/settings", icon: Settings, disabled: true },
+  { title: "System Users", url: "/users", icon: Users },
 ];
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
-    <Sidebar className="border-r border-border/50">
-      <SidebarHeader className="h-16 flex items-center px-4 border-b border-sidebar-border/50">
-        <div className="flex items-center gap-3 w-full">
-          <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-inner">
+    <Sidebar
+      collapsible="offcanvas"
+      className="border-r border-border bg-sidebar"
+    >
+      <SidebarHeader className="h-16 md:h-24 flex items-center px-6 border-b border-sidebar-border bg-sidebar/50">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
             <PawPrint className="h-5 w-5" />
           </div>
-          <span className="font-display font-bold text-lg text-sidebar-foreground tracking-tight">
-            TerraScope
-          </span>
+          <div className="flex flex-col">
+            <span className="font-display font-black text-sm leading-none tracking-tighter">
+              <span className="text-primary">AR</span> FARM
+            </span>
+            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">
+              Monitoring
+            </span>
+          </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase tracking-wider text-xs font-semibold mb-2 mt-4">
-            Operations
-          </SidebarGroupLabel>
+      <SidebarContent className="bg-sidebar">
+        <SidebarGroup className="pt-4">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="px-2 gap-1">
               {navItems.map((item) => {
                 const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url));
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive} 
-                      disabled={item.disabled}
-                      className="transition-colors rounded-lg py-5 my-0.5"
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className="transition-all rounded-lg py-6 px-4 hover:bg-primary/5 data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
                     >
-                      {item.disabled ? (
-                        <div className="flex items-center opacity-50 cursor-not-allowed">
-                          <item.icon className="mr-3 h-5 w-5" />
-                          <span className="font-medium">{item.title}</span>
-                        </div>
-                      ) : (
-                        <Link href={item.url} className="flex items-center">
-                          <item.icon className="mr-3 h-5 w-5" />
-                          <span className="font-medium">{item.title}</span>
-                        </Link>
-                      )}
+                      <Link href={item.url} className="flex items-center" onClick={handleLinkClick}>
+                        <item.icon className={isActive ? "mr-3 h-5 w-5 text-primary" : "mr-3 h-5 w-5"} />
+                        <span className="font-bold text-sm uppercase tracking-wide">{item.title}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

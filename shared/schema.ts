@@ -3,6 +3,18 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password"),
+  fullName: text("full_name").notNull(),
+  role: text("role").notNull().default("Farm Administrator"),
+  email: text("email"),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const animals = pgTable("animals", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(), // This will be used for "Flock Name"
@@ -50,6 +62,23 @@ export const feeds = pgTable("feeds", {
   fedAt: timestamp("fed_at").defaultNow().notNull(),
 });
 
+// New table for dynamic categories/options
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'species', 'health_status', 'income_category', 'expense_category'
+  name: text("name").notNull(),
+});
+
+// New table for feed inventory tracking
+export const feedInventory = pgTable("feed_inventory", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // e.g., 'Starter Mash', 'Grower Pellets'
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull().default("0"),
+  unit: text("unit").notNull(), // e.g., 'kg', 'bags'
+  minThreshold: numeric("min_threshold", { precision: 10, scale: 2 }).notNull().default("10"), // Warning level
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const animalsRelations = relations(animals, ({ many }) => ({
   observations: many(observations),
   feeds: many(feeds),
@@ -77,6 +106,7 @@ export const feedsRelations = relations(feeds, ({ one }) => ({
   }),
 }));
 
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, updatedAt: true });
 export const insertAnimalSchema = createInsertSchema(animals, {
   startDate: z.coerce.date(),
 }).omit({ id: true });
@@ -85,6 +115,11 @@ export const insertTransactionSchema = createInsertSchema(transactions, {
   date: z.coerce.date(),
 }).omit({ id: true });
 export const insertFeedSchema = createInsertSchema(feeds).omit({ id: true, fedAt: true });
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
+export const insertFeedInventorySchema = createInsertSchema(feedInventory).omit({ id: true, updatedAt: true });
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Animal = typeof animals.$inferSelect;
 export type InsertAnimal = z.infer<typeof insertAnimalSchema>;
@@ -98,6 +133,12 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
 export type Feed = typeof feeds.$inferSelect;
 export type InsertFeed = z.infer<typeof insertFeedSchema>;
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+
+export type FeedInventory = typeof feedInventory.$inferSelect;
+export type InsertFeedInventory = z.infer<typeof insertFeedInventorySchema>;
 
 export type AnimalWithObservations = Animal & {
   observations?: Observation[];

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, insertFeedSchema, animals, observations, transactions, feeds } from './schema';
+import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, insertFeedSchema, insertUserSchema, animals, observations, transactions, feeds, users, categories, insertCategorySchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -15,6 +15,120 @@ export const errorSchemas = {
 };
 
 export const api = {
+  users: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/users' as const,
+      responses: {
+        200: z.array(z.custom<typeof users.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/users' as const,
+      input: insertUserSchema,
+      responses: {
+        201: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/users/:id' as const,
+      input: insertUserSchema.partial(),
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/users/:id' as const,
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+    resetPassword: {
+      method: 'POST' as const,
+      path: '/api/users/:id/reset-password' as const,
+      responses: {
+        200: z.object({ message: z.string(), temporaryPassword: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+    recover: {
+      method: 'POST' as const,
+      path: '/api/users/recover' as const,
+      input: z.object({ email: z.string().email(), username: z.string().optional() }),
+      responses: {
+        200: z.object({ message: z.string(), username: z.string().optional() }),
+        404: errorSchemas.notFound,
+      },
+    },
+    login: {
+      method: 'POST' as const,
+      path: '/api/login' as const,
+      input: z.object({ username: z.string(), password: z.string() }),
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: z.object({ message: z.string() }),
+      },
+    },
+    logout: {
+      method: 'POST' as const,
+      path: '/api/logout' as const,
+      responses: {
+        200: z.object({ message: z.string() }),
+      },
+    },
+    current: {
+      method: 'GET' as const,
+      path: '/api/users/current' as const,
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+      },
+    },
+    updateCurrent: {
+      method: 'PATCH' as const,
+      path: '/api/users/current' as const,
+      input: insertUserSchema.partial().extend({
+        currentPassword: z.string().optional(),
+        newPassword: z.string().min(8).optional()
+      }),
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  categories: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/categories' as const,
+      responses: {
+        200: z.array(z.custom<typeof categories.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/categories' as const,
+      input: insertCategorySchema,
+      responses: {
+        201: z.custom<typeof categories.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/categories/:id' as const,
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   animals: {
     list: {
       method: 'GET' as const,
@@ -128,8 +242,12 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
   return url;
 }
 
+export type LoginInput = z.infer<typeof api.users.login.input>;
+export type UserInput = z.infer<typeof api.users.updateCurrent.input>;
+export type CreateUserInput = z.infer<typeof api.users.create.input>;
 export type AnimalInput = z.infer<typeof api.animals.create.input>;
 export type AnimalUpdateInput = z.infer<typeof api.animals.update.input>;
 export type ObservationInput = z.infer<typeof api.observations.create.input>;
 export type TransactionInput = z.infer<typeof api.finances.create.input>;
 export type FeedInput = z.infer<typeof api.feeds.create.input>;
+export type CategoryInput = z.infer<typeof api.categories.create.input>;
