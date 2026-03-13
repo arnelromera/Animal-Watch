@@ -15,7 +15,7 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Livestock Roster", url: "/animals", icon: PawPrint },
-  { title: "Nutrition & Feeding", url: "/feeds", icon: Utensils },
+  { title: "Stock Management", url: "/stock-management", icon: Utensils },
   { title: "Finances", url: "/finances", icon: CreditCard },
   { title: "System Users", url: "/users", icon: Users },
 ];

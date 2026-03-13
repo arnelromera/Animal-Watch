@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { insertFeedInventorySchema, insertMedicalSupplySchema } from "@shared/schema";
 
 // Simple in-memory session tracking for development
 let currentUserId: number | null = null;
@@ -134,34 +135,72 @@ export async function registerRoutes(
     res.status(204).end();
   });
 
-  app.get(api.feeds.list.path, async (req, res) => {
-    const feeds = await storage.getFeeds();
-    res.json(feeds);
+  // Inventory & Medical routes
+  app.get(api.feedInventory.list.path, async (req, res) => {
+    const items = await storage.getFeedInventory();
+    res.json(items);
   });
 
-  app.post(api.feeds.create.path, async (req, res) => {
+  app.post(api.feedInventory.create.path, async (req, res) => {
     try {
-      const animalId = Number(req.params.animalId);
-      if (isNaN(animalId)) return res.status(400).json({ message: "Invalid ID" });
-
-      const input = api.feeds.create.input.parse(req.body);
-      const animal = await storage.getAnimal(animalId);
-      
-      if (!animal) {
-         return res.status(404).json({ message: 'Animal not found' });
-      }
-
-      const feed = await storage.createFeed(animalId, input);
-      res.status(201).json(feed);
+      const input = api.feedInventory.create.input.parse(req.body);
+      const item = await storage.createFeedInventory(input);
+      res.status(201).json(item);
     } catch (err) {
+      console.error("Error creating feed inventory:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      res.status(400).json({ message: err instanceof Error ? err.message : "Failed to log feeding" });
+      res.status(400).json({ message: err instanceof Error ? err.message : "Failed to create inventory item" });
     }
+  });
+
+  app.delete(api.feedInventory.delete.path, async (req, res) => {
+    const id = Number(req.params.id);
+    await storage.deleteFeedInventory(id);
+    res.status(204).end();
+  });
+
+  app.get(api.medicalSupplies.list.path, async (req, res) => {
+    const supplies = await storage.getMedicalSupplies();
+    res.json(supplies);
+  });
+
+  app.post(api.medicalSupplies.create.path, async (req, res) => {
+    try {
+      const input = api.medicalSupplies.create.input.parse(req.body);
+      const item = await storage.createMedicalSupply(input);
+      res.status(201).json(item);
+    } catch (err) {
+      console.error("Error creating medical supply:", err);
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      res.status(400).json({ message: err instanceof Error ? err.message : "Failed to create medical supply" });
+    }
+  });
+
+  app.patch(api.medicalSupplies.update.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.medicalSupplies.update.input.parse(req.body);
+      const item = await storage.updateMedicalSupply(id, input);
+      res.json(item);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to update medical supply" });
+    }
+  });
+
+  app.delete(api.medicalSupplies.delete.path, async (req, res) => {
+    const id = Number(req.params.id);
+    await storage.deleteMedicalSupply(id);
+    res.status(204).end();
   });
 
   // User routes - Specific "current" routes MUST come before generic ":id" routes
@@ -333,6 +372,20 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/categories/type", async (req, res) => {
+    try {
+      const { oldType, newType } = req.body;
+      if (!oldType || !newType) return res.status(400).json({ message: "Old and new types are required" });
+
+      const success = await storage.updateCategoryType(oldType, newType);
+      if (!success) return res.status(404).json({ message: "Category type not found" });
+
+      res.json({ message: "Category type updated successfully" });
+    } catch (err) {
+      res.status(400).json({ message: "Failed to update category type" });
+    }
+  });
+
   app.delete(api.categories.delete.path, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
@@ -401,32 +454,42 @@ export async function registerRoutes(
   }
 
   const categoriesList = await storage.getCategories();
-  if (categoriesList.length === 0) {
-    const defaultCategories = [
-      { type: 'species', name: 'Pig' },
-      { type: 'species', name: 'Goat' },
-      { type: 'species', name: 'Chicken' },
-      { type: 'species', name: 'Cow' },
-      { type: 'health_status', name: 'Healthy' },
-      { type: 'health_status', name: 'Injured' },
-      { type: 'health_status', name: 'Sick' },
-      { type: 'health_status', name: 'Monitoring' },
-      { type: 'health_status', name: 'Unknown' },
-      { type: 'expense_category', name: 'Events' },
-      { type: 'expense_category', name: 'Feed' },
-      { type: 'expense_category', name: 'Gas and Electric' },
-      { type: 'expense_category', name: 'General Supplies' },
-      { type: 'expense_category', name: 'Labor and Employment' },
-      { type: 'expense_category', name: 'Medication and Vaccines' },
-      { type: 'expense_category', name: 'Others' },
-      { type: 'expense_category', name: 'Purchase of Livestock' },
-      { type: 'income_category', name: 'Sale of Pig' },
-      { type: 'income_category', name: 'Sale of Goat' },
-      { type: 'income_category', name: 'Sale of Chicken' },
-      { type: 'income_category', name: 'Sale of Cow' },
-    ];
+  const defaultCategories = [
+    { type: 'species', name: 'Pig' },
+    { type: 'species', name: 'Goat' },
+    { type: 'species', name: 'Chicken' },
+    { type: 'species', name: 'Cow' },
+    { type: 'health_status', name: 'Healthy' },
+    { type: 'health_status', name: 'Injured' },
+    { type: 'health_status', name: 'Sick' },
+    { type: 'health_status', name: 'Monitoring' },
+    { type: 'health_status', name: 'Unknown' },
+    { type: 'expense_category', name: 'Events' },
+    { type: 'expense_category', name: 'Feed' },
+    { type: 'expense_category', name: 'Gas and Electric' },
+    { type: 'expense_category', name: 'General Supplies' },
+    { type: 'expense_category', name: 'Labor and Employment' },
+    { type: 'expense_category', name: 'Medication and Vaccines' },
+    { type: 'expense_category', name: 'Others' },
+    { type: 'expense_category', name: 'Purchase of Livestock' },
+    { type: 'income_category', name: 'Sale of Pig' },
+    { type: 'income_category', name: 'Sale of Goat' },
+    { type: 'income_category', name: 'Sale of Chicken' },
+    { type: 'income_category', name: 'Sale of Cow' },
+    { type: 'feed_unit', name: 'kg' },
+    { type: 'feed_unit', name: 'g' },
+    { type: 'feed_unit', name: 'lbs' },
+    { type: 'feed_unit', name: 'bags' },
+    { type: 'feed_unit', name: 'portions' },
+    { type: 'feed_unit', name: 'liters' },
+    { type: 'med_unit', name: 'ml' },
+    { type: 'med_unit', name: 'vials' },
+    { type: 'med_unit', name: 'pills' },
+  ];
 
-    for (const cat of defaultCategories) {
+  for (const cat of defaultCategories) {
+    const exists = categoriesList.some(c => c.type === cat.type && c.name === cat.name);
+    if (!exists) {
       await storage.createCategory(cat);
     }
   }

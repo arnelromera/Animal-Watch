@@ -34,6 +34,7 @@
 * Split large components into smaller components or hooks.
 * Use the project's **Primary Green** for main action buttons.
 * Use the `.glass-card` class for frosted-glass style cards.
+* **Typography**: Use **"DM Sans", sans-serif** as the sole font family for the entire project.
 
 ## 5. Custom Hook Rules
 
@@ -126,3 +127,18 @@
 
 * Document major features, APIs, and schema changes.
 * Keep project documentation updated.
+
+## 22. Calendar Component Standards
+
+* Use a consistent pattern for date selectors: a `Popover` containing the Shadcn `Calendar` component.
+* **Trigger Styling**: The trigger button should be `h-12`, `font-bold`, and use `border-2`.
+* **Visual Feedback**: Apply conditional classes: `border-primary text-primary bg-primary/5` when a date is selected, and `border-border` when empty.
+* **Iconography**: Always use `CalendarIcon` from `lucide-react` with `mr-2 h-5 w-5`.
+* **Functionality**:
+    * Include `captionLayout="dropdown-buttons"` in the `Calendar` component.
+    * Provide `fromYear` and `toYear` ranges for dropdowns.
+    * Always provide a way to clear the selection (e.g., an `X` icon inside the button) when a value exists.
+
+## 23. Module Responsibility Rule
+
+* **Distinguish between Consumption and Inventory**: Feeding events should live in the Feeding module. The Stock module should only handle the registration of new supplies, manual adjustments (for waste/spillage), and low-stock alerts.

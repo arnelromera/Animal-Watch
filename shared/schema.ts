@@ -51,17 +51,6 @@ export const transactions = pgTable("transactions", {
   date: timestamp("date").defaultNow().notNull(),
 });
 
-export const feeds = pgTable("feeds", {
-  id: serial("id").primaryKey(),
-  animalId: integer("animal_id").references(() => animals.id, { onDelete: "cascade" }).notNull(),
-  foodType: text("food_type").notNull(),
-  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
-  unit: text("unit").notNull(), // e.g., kg, lbs, portions
-  pricePerUnit: numeric("price_per_unit", { precision: 10, scale: 2 }).notNull(),
-  totalCost: numeric("total_cost", { precision: 10, scale: 2 }).notNull(),
-  fedAt: timestamp("fed_at").defaultNow().notNull(),
-});
-
 // New table for dynamic categories/options
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -72,16 +61,27 @@ export const categories = pgTable("categories", {
 // New table for feed inventory tracking
 export const feedInventory = pgTable("feed_inventory", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(), // e.g., 'Starter Mash', 'Grower Pellets'
+  name: text("name").notNull().unique(), // e.g. 'Starter Mash', 'Grower Pellets'
   quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull().default("0"),
-  unit: text("unit").notNull(), // e.g., 'kg', 'bags'
+  unit: text("unit").notNull(), // e.g. 'kg', 'bags'
   minThreshold: numeric("min_threshold", { precision: 10, scale: 2 }).notNull().default("10"), // Warning level
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// New table for medical supplies
+export const medicalSupplies = pgTable("medical_supplies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull().default("0"),
+  unit: text("unit").notNull(), // e.g. 'vials', 'ml', 'pills'
+  minThreshold: numeric("min_threshold", { precision: 10, scale: 2 }).notNull().default("5"),
+  expirationDate: timestamp("expiration_date"),
+  withdrawalDays: integer("withdrawal_days").default(0), // Safety period before consumption
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const animalsRelations = relations(animals, ({ many }) => ({
   observations: many(observations),
-  feeds: many(feeds),
   transactions: many(transactions),
 }));
 
@@ -99,13 +99,6 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
-export const feedsRelations = relations(feeds, ({ one }) => ({
-  animal: one(animals, {
-    fields: [feeds.animalId],
-    references: [animals.id],
-  }),
-}));
-
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, updatedAt: true });
 export const insertAnimalSchema = createInsertSchema(animals, {
   startDate: z.coerce.date(),
@@ -114,9 +107,21 @@ export const insertObservationSchema = createInsertSchema(observations).omit({ i
 export const insertTransactionSchema = createInsertSchema(transactions, {
   date: z.coerce.date(),
 }).omit({ id: true });
-export const insertFeedSchema = createInsertSchema(feeds).omit({ id: true, fedAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
-export const insertFeedInventorySchema = createInsertSchema(feedInventory).omit({ id: true, updatedAt: true });
+
+// Robust numeric handling for inventory items
+const numericString = z.preprocess((val) => (val === null || val === undefined) ? "0" : String(val), z.string());
+
+export const insertFeedInventorySchema = createInsertSchema(feedInventory, {
+  quantity: numericString,
+  minThreshold: numericString,
+}).omit({ id: true, updatedAt: true });
+
+export const insertMedicalSupplySchema = createInsertSchema(medicalSupplies, {
+  quantity: numericString,
+  minThreshold: numericString,
+  expirationDate: z.coerce.date().nullable(),
+}).omit({ id: true, updatedAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -131,17 +136,16 @@ export type InsertObservation = z.infer<typeof insertObservationSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
-export type Feed = typeof feeds.$inferSelect;
-export type InsertFeed = z.infer<typeof insertFeedSchema>;
-
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
 export type FeedInventory = typeof feedInventory.$inferSelect;
 export type InsertFeedInventory = z.infer<typeof insertFeedInventorySchema>;
 
+export type MedicalSupply = typeof medicalSupplies.$inferSelect;
+export type InsertMedicalSupply = z.infer<typeof insertMedicalSupplySchema>;
+
 export type AnimalWithObservations = Animal & {
   observations?: Observation[];
-  feeds?: Feed[];
   transactions?: Transaction[];
 };

@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Map, Calendar as CalendarIcon, X } from "lucide-react";
+import { Plus, Search, Map, Calendar as CalendarIcon, X, PawPrint } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
@@ -95,7 +95,10 @@ export default function Animals() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] border-border/50 shadow-xl">
               <DialogHeader>
-                <DialogTitle className="font-display text-2xl">Register New Flock</DialogTitle>
+                <DialogTitle className="font-display text-2xl flex items-center gap-2">
+                  <PawPrint className="h-6 w-6 text-primary" />
+                  Register New Flock
+                </DialogTitle>
                 <DialogDescription>
                   Enter the details of the new livestock group to begin tracking.
                 </DialogDescription>

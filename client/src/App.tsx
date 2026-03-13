@@ -27,7 +27,7 @@ import Dashboard from "@/pages/dashboard";
 import Animals from "@/pages/animals";
 import AnimalDetails from "@/pages/animal-details";
 import Finances from "@/pages/finances";
-import Feeds from "@/pages/feeds";
+import StockManagement from "@/pages/stock-management";
 import Profile from "@/pages/profile";
 import Users from "@/pages/users";
 import SettingsPage from "@/pages/settings";
@@ -47,7 +47,7 @@ function Router() {
       <Route path="/animals" component={Animals} />
       <Route path="/animals/:id" component={AnimalDetails} />
       <Route path="/finances" component={Finances} />
-      <Route path="/feeds" component={Feeds} />
+      <Route path="/stock-management" component={StockManagement} />
       <Route path="/users" component={Users} />
       <Route path="/profile" component={Profile} />
       <Route path="/settings" component={SettingsPage} />
@@ -95,7 +95,7 @@ function AppHeader() {
   return (
     <header className="h-16 md:h-24 flex items-center px-4 md:px-8 border-b border-border/50 shrink-0 bg-background/95 backdrop-blur-sm z-50 sticky top-0">
       <div className="flex items-center gap-4">
-        {/* Sidebar Toggle Button - Visible ONLY on mobile */}
+        {/* Sidebar Trigger Button - Visible ONLY on mobile */}
         <SidebarTrigger className="md:hidden h-10 w-10 [&_svg]:size-6 text-primary hover:bg-primary/10 hover:text-primary transition-all rounded-xl border border-primary/10 shadow-sm shrink-0" />
 
         {/* Branding Section - Responsive border and padding */}

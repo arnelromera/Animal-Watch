@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,10 +24,13 @@ import {
 import { type Animal } from "@shared/schema";
 import { useCreateAnimal, useUpdateAnimal } from "@/hooks/use-animals";
 import { useToast } from "@/hooks/use-toast";
-import { PawPrint, Loader2 } from "lucide-react";
+import { PawPrint, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-// Extend the schema to handle form string coercions and add stricter validations
 const formSchema = insertAnimalSchema.extend({
   name: z.string().min(1, "Flock Name is required").max(100, "Name is too long"),
   species: z.string().min(1, "Livestock Type is required"),
@@ -54,7 +58,6 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
   const createMutation = useCreateAnimal();
   const updateMutation = useUpdateAnimal();
 
-  // Fetch dynamic categories
   const { data: categories } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
@@ -114,9 +117,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Flock Name <span className="text-destructive">*</span></FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Flock Name <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. North Pasture Flock" {...field} className="bg-background" />
+                  <Input placeholder="e.g. North Pasture Flock" {...field} className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -128,14 +131,14 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="species"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Livestock Type <span className="text-destructive">*</span></FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Livestock Type <span className="text-destructive">*</span></FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-border/50">
                     {speciesOptions.map((s) => (
                       <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
                     ))}
@@ -154,9 +157,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="count"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Number of Animals <span className="text-destructive">*</span></FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Number of Animals <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} className="bg-background" />
+                  <Input type="number" {...field} className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -168,9 +171,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="pricePerLivestock"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price per Head (₱) <span className="text-destructive">*</span></FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Price per Head (₱) <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} className="bg-background" />
+                  <Input type="number" step="0.01" {...field} className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium font-bold text-primary" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -181,16 +184,37 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             control={form.control}
             name="startDate"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Date</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="date" 
-                    value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
-                    onChange={(e) => field.onChange(new Date(e.target.value))}
-                    className="bg-background" 
-                  />
-                </FormControl>
+              <FormItem className="flex flex-col">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground mb-2">Start Date <span className="text-destructive">*</span></FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-12 px-4 font-bold border-2 transition-all relative group bg-muted/30 border-border/50 rounded-xl",
+                          !field.value && "text-muted-foreground",
+                          field.value && "border-primary text-primary bg-primary/5"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-5 w-5" />
+                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                      initialFocus
+                      captionLayout="dropdown-buttons"
+                      fromYear={2020}
+                      toYear={new Date().getFullYear() + 5}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -201,14 +225,14 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
             name="healthStatus"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Health Status</FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Health Status</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium">
                       <SelectValue placeholder="Select a status" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-border/50">
                     {healthStatuses.map((status) => (
                       <SelectItem key={status.id} value={status.name}>
                         {status.name}
@@ -230,9 +254,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Location / Pen <span className="text-destructive">*</span></FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Location / Pen <span className="text-destructive">*</span></FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Barn A, Pen 4" {...field} className="bg-background" />
+                <Input placeholder="e.g. Barn A, Pen 4" {...field} className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -244,13 +268,13 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Notes</FormLabel>
               <FormControl>
                 <Textarea 
                   placeholder="Additional details about this flock..." 
                   {...field} 
                   value={field.value ?? ""}
-                  className="bg-background resize-none" 
+                  className="bg-muted/30 border-border/50 rounded-xl min-h-[100px] text-foreground font-medium resize-none"
                 />
               </FormControl>
               <FormMessage />
@@ -263,9 +287,9 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL (Optional)</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Image URL (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://..." {...field} value={field.value ?? ""} className="bg-background" />
+                <Input placeholder="https://..." {...field} value={field.value ?? ""} className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -276,14 +300,14 @@ export function AnimalForm({ initialData, onSuccess }: AnimalFormProps) {
           <Button 
             type="submit" 
             disabled={isPending}
-            className="w-full sm:w-auto shadow-md shadow-primary/20 hover-elevate active-elevate-2"
+            className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-black shadow-lg shadow-primary/20 hover-elevate active-elevate-2 transition-all text-white uppercase tracking-widest text-xs"
           >
             {isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <PawPrint className="mr-2 h-4 w-4" />
             )}
-            {isEditing ? "Save Changes" : "Register Flock"}
+            {isEditing ? "Save Changes" : "Register Master Flock"}
           </Button>
         </div>
       </form>

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, Bell, Shield, Database, Globe, Info, Lock, KeyRound, AlertCircle, Sun, Moon, Monitor, Loader2, Eye, EyeOff, Plus, Trash2, Tag, Settings2, PlusCircle, Volume2, Mail, Smartphone } from "lucide-react";
+import { Palette, Bell, Shield, Database, Globe, Info, Lock, KeyRound, AlertCircle, Sun, Moon, Monitor, Loader2, Eye, EyeOff, Plus, Trash2, Tag, Settings2, PlusCircle, Volume2, Mail, Smartphone, CheckCircle2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -25,6 +26,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -43,10 +55,14 @@ interface CategorySectionProps {
   isPending: boolean;
   onAdd: (name: string) => void;
   onDelete: (id: number) => void;
+  onEditType?: (oldType: string, newName: string) => void;
+  onDeleteType?: (type: string) => void;
 }
 
-const CategorySection = ({ title, type, description, categories, isPending, onAdd, onDelete }: CategorySectionProps) => {
+const CategorySection = ({ title, type, description, categories, isPending, onAdd, onDelete, onEditType, onDeleteType }: CategorySectionProps) => {
   const [newItemName, setNewItemName] = useState("");
+  const [isEditingType, setIsEditingType] = useState(false);
+  const [editTypeName, setEditTypeName] = useState(title);
   const items = categories.filter(c => c.type === type);
 
   const handleAdd = () => {
@@ -56,17 +72,71 @@ const CategorySection = ({ title, type, description, categories, isPending, onAd
     }
   };
 
+  const handleEditTypeSubmit = () => {
+    if (editTypeName.trim() && onEditType) {
+      onEditType(type, editTypeName.trim());
+      setIsEditingType(false);
+    }
+  };
+
+  const isDefaultType = ['species', 'expense_category', 'income_category', 'health_status', 'feed_unit', 'med_unit'].includes(type);
+
   return (
     <Card className="shadcn-card border bg-card text-card-foreground border-border/50 shadow-md rounded-3xl overflow-hidden glass-card h-full flex flex-col hover:border-primary/20 transition-all duration-300">
       <CardHeader className="bg-muted/5 border-b border-border/50 p-6">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <Tag className="h-5 w-5" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Tag className="h-5 w-5" />
+            </div>
+            {isEditingType ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  value={editTypeName}
+                  onChange={(e) => setEditTypeName(e.target.value)}
+                  className="h-8 bg-background border-primary/30 text-foreground"
+                  onKeyDown={(e) => e.key === 'Enter' && handleEditTypeSubmit()}
+                  autoFocus
+                />
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-primary" onClick={handleEditTypeSubmit}><CheckCircle2 className="h-4 w-4" /></Button>
+              </div>
+            ) : (
+              <div>
+                <CardTitle className="text-lg font-display font-bold uppercase tracking-tight text-[#4b9461]">{title}</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground line-clamp-1">{description}</CardDescription>
+              </div>
+            )}
           </div>
-          <div>
-            <CardTitle className="text-lg font-display font-bold uppercase tracking-tight text-[#4b9461]">{title}</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground line-clamp-1">{description}</CardDescription>
-          </div>
+
+          {!isDefaultType && !isEditingType && (
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-primary/10 text-muted-foreground" onClick={() => setIsEditingType(true)}>
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-3xl border-border/50 shadow-2xl glass-card">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-xl font-display font-black tracking-tighter text-foreground">Remove Group?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-muted-foreground">
+                      This will delete the entire "{title}" group and all items within it. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90 rounded-xl font-bold" onClick={() => onDeleteType?.(type)}>
+                      Delete Group
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-6 flex-1 flex flex-col space-y-6">
@@ -75,7 +145,7 @@ const CategorySection = ({ title, type, description, categories, isPending, onAd
             placeholder={`Add item...`}
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            className="bg-muted/30 border-border/50 rounded-xl h-11 text-foreground"
+            className="bg-muted/30 border-border/50 rounded-xl h-11 text-foreground font-medium"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -86,7 +156,7 @@ const CategorySection = ({ title, type, description, categories, isPending, onAd
           <Button
             onClick={handleAdd}
             disabled={!newItemName.trim() || isPending}
-            className="rounded-xl bg-primary text-white font-bold h-11 px-6 shrink-0 hover-elevate active-elevate-2 shadow-sm flex items-center justify-center gap-2"
+            className="rounded-xl bg-primary text-white font-bold h-11 px-6 shrink-0 shadow-lg shadow-primary/20 hover-elevate active-elevate-2 transition-all flex items-center justify-center gap-2"
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Add
@@ -117,16 +187,6 @@ const CategorySection = ({ title, type, description, categories, isPending, onAd
   );
 };
 
-const NotificationToggle = ({ title, description, defaultChecked = false }: { title: string, description: string, defaultChecked?: boolean }) => (
-  <div className="flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-colors group">
-    <div className="space-y-0.5">
-      <div className="font-bold text-sm uppercase tracking-tight group-hover:text-primary transition-colors text-foreground">{title}</div>
-      <div className="text-[11px] text-muted-foreground leading-relaxed max-w-[280px]">{description}</div>
-    </div>
-    <Switch defaultChecked={defaultChecked} />
-  </div>
-);
-
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
@@ -151,7 +211,7 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
-      toast({ title: "Success", description: "Item added successfully." });
+      toast({ title: "Success", description: "Item saved successfully." });
     },
   });
 
@@ -161,14 +221,37 @@ export default function Settings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
-      toast({ title: "Removed", description: "Item removed successfully." });
+      toast({ title: "Removed", description: "Item removed from system." });
     },
   });
 
-  // Unique types from database
+  const deleteTypeMutation = useMutation({
+    mutationFn: async (type: string) => {
+      const itemsToDelete = categories.filter(c => c.type === type);
+      for (const item of itemsToDelete) {
+        await apiRequest("DELETE", `/api/categories/${item.id}`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      toast({ title: "Group Removed", description: "The custom group has been deleted." });
+    },
+  });
+
+  const editTypeMutation = useMutation({
+    mutationFn: async ({ oldType, newType }: { oldType: string, newType: string }) => {
+      const res = await apiRequest("PATCH", "/api/categories/type", { oldType, newType });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      toast({ title: "Updated", description: "Group title updated successfully." });
+    },
+  });
+
   const dynamicTypes = useMemo(() => {
     const types = Array.from(new Set(categories.map(c => c.type)));
-    const defaults = ['species', 'expense_category', 'income_category', 'health_status'];
+    const defaults = ['species', 'expense_category', 'income_category', 'health_status', 'feed_unit', 'med_unit'];
     return Array.from(new Set([...defaults, ...types]));
   }, [categories]);
 
@@ -176,10 +259,11 @@ export default function Settings() {
     'species': 'Livestock Species',
     'expense_category': 'Expense Categories',
     'income_category': 'Income Categories',
-    'health_status': 'Health Statuses'
+    'health_status': 'Health Statuses',
+    'feed_unit': 'Feed Units',
+    'med_unit': 'Medicine Units'
   };
 
-  // Use URL search params to determine the initial tab
   const getInitialTab = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") || "appearance";
@@ -187,7 +271,6 @@ export default function Settings() {
 
   const [activeTab, setActiveTab] = useState(getInitialTab());
 
-  // Update tab when URL changes
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
@@ -208,7 +291,8 @@ export default function Settings() {
   async function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
     try {
       await updateMutation.mutateAsync({
-        password: values.newPassword
+        newPassword: values.newPassword,
+        currentPassword: values.currentPassword
       });
       toast({
         title: "Password updated",
@@ -227,8 +311,7 @@ export default function Settings() {
   const handleAddType = () => {
     if (newTypeName.trim()) {
       const slug = newTypeName.trim().toLowerCase().replace(/\s+/g, '_');
-      // Create an initial dummy item to register the type
-      createCategoryMutation.mutate({ type: slug, name: 'Default Item' });
+      createCategoryMutation.mutate({ type: slug, name: 'Initial Entry' });
       setNewTypeName("");
       setIsTypeDialogOpen(false);
     }
@@ -241,35 +324,35 @@ export default function Settings() {
         <p className="text-muted-foreground text-sm md:text-base">Configure system preferences, appearance, and operation defaults.</p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden px-6 md:p-8 max-w-6xl w-full mx-auto">
+      <div className="flex-1 min-h-0 overflow-hidden px-6 md:p-8 max-w-6xl w-full mx-auto pb-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col md:flex-row gap-8 h-full items-start">
-          <TabsList className="flex flex-col h-auto bg-transparent gap-2 p-0 min-w-[240px] w-full md:w-[240px] items-stretch shrink-0">
+          <TabsList className="flex flex-col h-auto bg-transparent gap-2 p-0 min-w-[240px] w-full md:w-[240px] items-stretch shrink-0 md:sticky md:top-0">
             <TabsTrigger
               value="appearance"
               className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary"
             >
-              <Palette className="h-4 w-4 mr-3" />
+              <Palette className="h-4 w-4 mr-3 shrink-0" />
               Appearance
             </TabsTrigger>
             <TabsTrigger
               value="operations"
-              className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary"
+              className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary text-left"
             >
-              <Database className="h-4 w-4 mr-3" />
+              <Database className="h-4 w-4 mr-3 shrink-0" />
               Operations
             </TabsTrigger>
             <TabsTrigger
               value="notifications"
-              className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary"
+              className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary text-left"
             >
-              <Bell className="h-4 w-4 mr-3" />
+              <Bell className="h-4 w-4 mr-3 shrink-0" />
               Notifications
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary"
+              className="justify-start px-6 py-4 rounded-xl font-bold uppercase text-[11px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-muted/50 transition-all border border-transparent data-[state=active]:border-primary text-left"
             >
-              <Shield className="h-4 w-4 mr-3" />
+              <Shield className="h-4 w-4 mr-3 shrink-0" />
               Security
             </TabsTrigger>
           </TabsList>
@@ -278,7 +361,7 @@ export default function Settings() {
             <TabsContent value="appearance" className="m-0 focus-visible:outline-none">
               <Card className="shadcn-card border bg-card text-card-foreground border-border/50 shadow-xl rounded-3xl overflow-hidden glass-card animate-in fade-in zoom-in-95 duration-500">
                 <CardHeader className="bg-muted/10 border-b border-border/50 p-8">
-                  <CardTitle className="text-2xl font-display font-bold uppercase tracking-tight text-foreground">System Customization</CardTitle>
+                  <CardTitle className="text-2xl font-display font-bold uppercase tracking-tight text-foreground font-black">System Customization</CardTitle>
                   <CardDescription className="text-muted-foreground text-xs uppercase tracking-widest font-black">Interface Styling</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
@@ -334,7 +417,7 @@ export default function Settings() {
                       <Info className="h-5 w-5 text-primary" />
                       Display Language
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4 text-muted-foreground">Select your preferred language for the interface.</p>
+                    <p className="text-sm text-muted-foreground mb-4 text-muted-foreground font-medium leading-relaxed">Select your preferred language for the interface. All farm reports and data will follow this locale.</p>
                     <Button variant="outline" className="rounded-xl border-primary/20 font-bold opacity-50 cursor-not-allowed text-foreground">
                       English (US) - Default
                     </Button>
@@ -344,43 +427,47 @@ export default function Settings() {
             </TabsContent>
 
             <TabsContent value="operations" className="m-0 focus-visible:outline-none space-y-6">
-              {/* Dynamic Category Manager Section */}
               <Card className="shadcn-card border bg-card text-card-foreground border-border/50 shadow-xl rounded-3xl overflow-hidden glass-card animate-in fade-in zoom-in-95 duration-500">
                 <CardHeader className="bg-muted/10 border-b border-border/50 p-8">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                         <Settings2 className="h-6 w-6 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-2xl font-display font-bold uppercase tracking-tight text-[#4b9461]">Operation Defaults</CardTitle>
-                        <CardDescription className="text-sm text-muted-foreground">Manage the categorization types and options available throughout the system.</CardDescription>
+                        <CardTitle className="text-2xl font-display font-black uppercase tracking-tight text-[#4b9461]">Operation Defaults</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground font-medium">Manage the categorization types and options available throughout the system.</CardDescription>
                       </div>
                     </div>
 
                     <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" variant="outline" className="rounded-xl border-primary/20 font-bold h-10 px-4 flex items-center gap-2 text-foreground hover:bg-primary hover:text-white transition-all">
-                          <PlusCircle className="h-4 w-4" /> New Group
+                        <Button size="lg" className="rounded-xl bg-primary hover:bg-primary/90 text-white font-black h-12 px-6 shadow-lg shadow-primary/20 hover-elevate transition-all flex items-center gap-2 uppercase tracking-widest text-[10px]">
+                          <PlusCircle className="h-5 w-5" /> New Group
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[400px] rounded-2xl">
+                      <DialogContent className="sm:max-w-[400px] rounded-3xl border-border/50 shadow-2xl glass-card text-foreground">
                         <DialogHeader>
-                          <DialogTitle className="text-xl font-display font-bold text-foreground">Add New Group</DialogTitle>
-                          <DialogDescription className="text-muted-foreground">Create a new category grouping for your farm operations.</DialogDescription>
+                          <DialogTitle className="text-2xl font-display font-black tracking-tighter">Add Category Group</DialogTitle>
+                          <DialogDescription className="text-sm text-muted-foreground uppercase tracking-widest font-bold text-[10px]">System Extension</DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
+                        <div className="space-y-6 py-6">
                           <div className="space-y-2">
-                            <FormLabel className="text-foreground">Group Name</FormLabel>
+                            <Label className="text-xs font-black uppercase tracking-widest text-foreground">Group Title</Label>
                             <Input
                               placeholder="e.g. Vaccination Types"
                               value={newTypeName}
                               onChange={(e) => setNewTypeName(e.target.value)}
-                              className="bg-muted/30 rounded-xl h-11 text-foreground"
+                              className="bg-muted/30 border-border/50 rounded-xl h-12 text-foreground font-medium"
                             />
                           </div>
-                          <Button onClick={handleAddType} className="w-full h-11 rounded-xl bg-primary text-white font-bold" disabled={!newTypeName.trim()}>
-                            Create Group
+                          <Button
+                            onClick={handleAddType}
+                            className="w-full h-12 rounded-xl bg-primary text-white font-black shadow-lg shadow-primary/20 hover-elevate active-elevate-2 transition-all uppercase tracking-widest text-xs"
+                            disabled={!newTypeName.trim() || createCategoryMutation.isPending}
+                          >
+                            {createCategoryMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                            Create Master Group
                           </Button>
                         </div>
                       </DialogContent>
@@ -394,11 +481,13 @@ export default function Settings() {
                         key={type}
                         title={typeLabels[type] || type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                         type={type}
-                        description={`Manage ${type.replace('_', ' ')} list.`}
+                        description={`Manage system entries for ${type.replace('_', ' ')}.`}
                         categories={categories}
                         isPending={createCategoryMutation.isPending}
                         onAdd={(name) => createCategoryMutation.mutate({ type, name })}
                         onDelete={(id) => deleteCategoryMutation.mutate(id)}
+                        onEditType={(type, newName) => editTypeMutation.mutate({ oldType: type, newType: newName })}
+                        onDeleteType={(type) => deleteTypeMutation.mutate(type)}
                       />
                     ))}
                   </div>
@@ -409,11 +498,11 @@ export default function Settings() {
             <TabsContent value="notifications" className="m-0 focus-visible:outline-none">
               <Card className="shadcn-card border bg-card text-card-foreground border-border/50 shadow-xl rounded-3xl overflow-hidden glass-card animate-in fade-in zoom-in-95 duration-500">
                 <CardHeader className="bg-muted/10 border-b border-border/50 p-8">
-                  <CardTitle className="text-2xl font-display font-bold uppercase tracking-tight text-foreground">Notification Preferences</CardTitle>
+                  <CardTitle className="text-2xl font-display font-black uppercase tracking-tight text-foreground">Notification Preferences</CardTitle>
                   <CardDescription className="text-muted-foreground text-xs uppercase tracking-widest font-black">Alert Configuration</CardDescription>
                 </CardHeader>
-                <CardContent className="p-20 text-center text-muted-foreground italic">
-                  Notification settings are coming soon.
+                <CardContent className="p-20 text-center text-muted-foreground italic font-medium leading-relaxed text-foreground">
+                  Notification settings are coming soon. The automated alert system is currently in beta.
                 </CardContent>
               </Card>
             </TabsContent>
@@ -421,7 +510,7 @@ export default function Settings() {
             <TabsContent value="security" className="m-0 focus-visible:outline-none">
               <Card className="shadcn-card border bg-card text-card-foreground border-border/50 shadow-xl rounded-3xl overflow-hidden glass-card animate-in fade-in zoom-in-95 duration-500">
                 <CardHeader className="bg-muted/10 border-b border-border/50 p-8">
-                  <CardTitle className="text-2xl font-display font-bold uppercase tracking-tight text-foreground">System Security</CardTitle>
+                  <CardTitle className="text-2xl font-display font-black uppercase tracking-tight text-foreground">System Security</CardTitle>
                   <CardDescription className="text-muted-foreground text-xs uppercase tracking-widest font-black">Access Control</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8">
@@ -432,8 +521,8 @@ export default function Settings() {
                         name="currentPassword"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-2 text-foreground">
-                              <Lock className="h-4 w-4 text-primary" /> Current Password
+                            <FormLabel className="flex items-center gap-2 text-foreground font-black uppercase tracking-widest text-[10px]">
+                              <Lock className="h-3 w-3 text-primary" /> Current Password
                             </FormLabel>
                             <FormControl>
                               <div className="relative">
@@ -441,7 +530,7 @@ export default function Settings() {
                                   type={showCurrentPassword ? "text" : "password"}
                                   placeholder="Current password"
                                   {...field}
-                                  className="bg-muted/30 border-border/50 h-12 rounded-xl focus:ring-primary pr-12 text-foreground"
+                                  className="bg-muted/30 border-border/50 h-12 rounded-xl focus:ring-primary pr-12 text-foreground font-medium"
                                 />
                                 <button
                                   type="button"
@@ -463,8 +552,8 @@ export default function Settings() {
                           name="newPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex items-center gap-2 text-foreground">
-                                <KeyRound className="h-4 w-4 text-primary" /> New Password
+                              <FormLabel className="flex items-center gap-2 text-foreground font-black uppercase tracking-widest text-[10px]">
+                                <KeyRound className="h-3 w-3 text-primary" /> New Password
                               </FormLabel>
                               <FormControl>
                                 <div className="relative">
@@ -472,7 +561,7 @@ export default function Settings() {
                                   type={showNewPassword ? "text" : "password"}
                                   placeholder="Enter new password"
                                   {...field}
-                                  className="bg-muted/30 border-border/50 h-12 rounded-xl focus:ring-primary pr-12 text-foreground"
+                                  className="bg-muted/30 border-border/50 h-12 rounded-xl focus:ring-primary pr-12 text-foreground font-medium"
                                 />
                                 <button
                                   type="button"
@@ -483,7 +572,7 @@ export default function Settings() {
                                 </button>
                                 </div>
                               </FormControl>
-                              <FormDescription className="text-[10px] text-muted-foreground">
+                              <FormDescription className="text-[10px] text-muted-foreground font-medium">
                                 Minimum 8 characters. Use a mix of letters and numbers.
                               </FormDescription>
                               <FormMessage />
@@ -496,7 +585,7 @@ export default function Settings() {
                           name="confirmPassword"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="flex items-center gap-2 text-foreground font-medium">
+                              <FormLabel className="flex items-center gap-2 text-foreground font-black uppercase tracking-widest text-[10px]">
                                 <Shield className="h-4 w-4 text-primary" /> Confirm New Password
                               </FormLabel>
                               <FormControl>
@@ -505,7 +594,7 @@ export default function Settings() {
                                   type={showConfirmPassword ? "text" : "password"}
                                   placeholder="Confirm new password"
                                   {...field}
-                                  className="bg-muted/30 border-border/50 h-12 rounded-xl focus:ring-primary pr-12 text-foreground"
+                                  className="bg-muted/30 border-border/50 h-12 rounded-xl focus:ring-primary pr-12 text-foreground font-medium"
                                 />
                                 <button
                                   type="button"
@@ -522,9 +611,9 @@ export default function Settings() {
                         />
                       </div>
 
-                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 p-4 rounded-xl flex gap-3">
-                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
-                        <p className="text-xs text-amber-800 dark:text-amber-400 leading-relaxed text-foreground">
+                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 p-5 rounded-2xl flex gap-4 shadow-sm border-dashed">
+                        <AlertCircle className="h-6 w-6 text-amber-600 shrink-0" />
+                        <p className="text-xs text-amber-800 dark:text-amber-400 leading-relaxed font-bold">
                           Changing your password will require you to log back in on all devices. Please ensure you remember your new credentials.
                         </p>
                       </div>
@@ -532,12 +621,12 @@ export default function Settings() {
                       <Button
                         type="submit"
                         disabled={updateMutation.isPending}
-                        className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-primary/20 hover-elevate transition-all text-white"
+                        className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-black shadow-lg shadow-primary/20 hover-elevate active-elevate-2 transition-all text-white uppercase tracking-widest text-xs"
                       >
                         {updateMutation.isPending ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          "Update Password"
+                          "Save Security Update"
                         )}
                       </Button>
                     </form>

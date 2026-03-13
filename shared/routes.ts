@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, insertFeedSchema, insertUserSchema, animals, observations, transactions, feeds, users, categories, insertCategorySchema } from './schema';
+import { insertAnimalSchema, insertObservationSchema, insertTransactionSchema, insertUserSchema, animals, observations, transactions, users, categories, insertCategorySchema, feedInventory, insertFeedInventorySchema, medicalSupplies, insertMedicalSupplySchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -141,7 +141,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/animals/:id' as const,
       responses: {
-        200: z.custom<typeof animals.$inferSelect & { observations?: typeof observations.$inferSelect[], feeds?: typeof feeds.$inferSelect[] }>(),
+        200: z.custom<typeof animals.$inferSelect & { observations?: typeof observations.$inferSelect[], transactions?: typeof transactions.$inferSelect[] }>(),
         404: errorSchemas.notFound,
       },
     },
@@ -189,7 +189,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/finances' as const,
       responses: {
-        200: z.array(z.custom<typeof transactions.$inferSelect>()),
+        200: z.array(z.custom<typeof transactions.$inferSelect & { animal?: typeof animals.$inferSelect }>()),
       },
     },
     create: {
@@ -210,24 +210,68 @@ export const api = {
       },
     },
   },
-  feeds: {
+  feedInventory: {
     list: {
       method: 'GET' as const,
-      path: '/api/feeds' as const,
+      path: '/api/feed-inventory' as const,
       responses: {
-        200: z.array(z.custom<typeof feeds.$inferSelect & { animal?: typeof animals.$inferSelect }>()),
+        200: z.array(z.custom<typeof feedInventory.$inferSelect>()),
       },
     },
     create: {
       method: 'POST' as const,
-      path: '/api/animals/:animalId/feeds' as const,
-      input: insertFeedSchema.omit({ animalId: true }),
+      path: '/api/feed-inventory' as const,
+      input: insertFeedInventorySchema,
       responses: {
-        201: z.custom<typeof feeds.$inferSelect>(),
+        201: z.custom<typeof feedInventory.$inferSelect>(),
         400: errorSchemas.validation,
       },
     },
-  }
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/feed-inventory/:id' as const,
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  medicalSupplies: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/medical-supplies' as const,
+      responses: {
+        200: z.array(z.custom<typeof medicalSupplies.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/medical-supplies' as const,
+      input: insertMedicalSupplySchema,
+      responses: {
+        201: z.custom<typeof medicalSupplies.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/medical-supplies/:id' as const,
+      input: insertMedicalSupplySchema.partial(),
+      responses: {
+        200: z.custom<typeof medicalSupplies.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/medical-supplies/:id' as const,
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
@@ -249,5 +293,6 @@ export type AnimalInput = z.infer<typeof api.animals.create.input>;
 export type AnimalUpdateInput = z.infer<typeof api.animals.update.input>;
 export type ObservationInput = z.infer<typeof api.observations.create.input>;
 export type TransactionInput = z.infer<typeof api.finances.create.input>;
-export type FeedInput = z.infer<typeof api.feeds.create.input>;
 export type CategoryInput = z.infer<typeof api.categories.create.input>;
+export type FeedInventoryInput = z.infer<typeof api.feedInventory.create.input>;
+export type MedicalSupplyInput = z.infer<typeof api.medicalSupplies.create.input>;

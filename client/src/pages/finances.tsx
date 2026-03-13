@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 // Enhanced validation schema for the form
 const financeFormSchema = insertTransactionSchema.extend({
   description: z.string().min(1, "Description is required"),
-  amount: z.string().refine((val) => parseFloat(val) > 0, "Amount must be greater than 0"),
+  amount: z.string().refine((val) => parseFloat(val) >= 0, "Amount must be valid"),
   category: z.string().min(1, "Category is required"),
   units: z.string().min(1, "Units is required"),
   pricePerUnit: z.string().min(1, "Price per unit is required"),
@@ -80,12 +80,12 @@ export default function Finances() {
     resolver: zodResolver(financeFormSchema),
     defaultValues: {
       description: "",
-      amount: "",
+      amount: "0.00",
       type: "expense",
       category: "Others",
       animalId: null,
       units: "1",
-      pricePerUnit: "",
+      pricePerUnit: "0",
       attachments: "",
       note: "",
       date: new Date(),
@@ -99,9 +99,7 @@ export default function Finances() {
 
   useEffect(() => {
     const total = parseFloat(units || "0") * parseFloat(pricePerUnit || "0");
-    if (total > 0) {
-      form.setValue("amount", total.toFixed(2));
-    }
+    form.setValue("amount", total.toFixed(2));
   }, [units, pricePerUnit, form]);
 
   // Automatically set category for income based on animal species from categories table
@@ -167,14 +165,14 @@ export default function Finances() {
     setFilterDate(date);
   };
 
-  if (isLoading) return <div className="p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (isLoading) return <div className="p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500 h-full overflow-y-auto scrollbar-hide">
+    <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500 h-full overflow-y-auto scrollbar-hide text-foreground">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground uppercase tracking-tight">Financial Oversight</h1>
-          <p className="text-muted-foreground mt-2 text-sm md:text-base">Track revenue and operational costs across your livestock batches.</p>
+          <h1 className="text-3xl md:text-4xl font-bold font-display uppercase tracking-tight">Financial Oversight</h1>
+          <p className="text-muted-foreground mt-2 text-sm md:text-base font-medium">Track revenue and operational costs across your livestock batches.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -219,17 +217,17 @@ export default function Finances() {
                 Register Finance
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] overflow-y-auto max-h-[90vh] rounded-2xl">
+            <DialogContent className="sm:max-w-[550px] overflow-hidden scrollbar-hide rounded-2xl border-border/50 shadow-2xl">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-display flex items-center gap-2 text-foreground font-black">
+                <DialogTitle className="text-2xl font-display flex items-center gap-2 text-foreground font-black uppercase tracking-tight">
                   <ReceiptText className="h-6 w-6 text-primary" />
                   New Financial Record
                 </DialogTitle>
-                <DialogDescription>
-                  Fill in the details below to log income or expenses for your farm.
+                <DialogDescription className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest">
+                  Log farm revenue or expenditures.
                 </DialogDescription>
               </DialogHeader>
-              <div className="py-4">
+              <div className="py-2 scrollbar-hide">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -238,10 +236,10 @@ export default function Finances() {
                         name="type"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-foreground font-bold">Type <span className="text-destructive">*</span></FormLabel>
+                            <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Type</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
-                                <SelectTrigger className="bg-muted/50 rounded-xl h-11 border-border/50">
+                                <SelectTrigger className="bg-muted/50 rounded-xl h-11 border-border/50 text-foreground font-medium">
                                   <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                               </FormControl>
@@ -261,10 +259,10 @@ export default function Finances() {
                           name="category"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-foreground font-bold">Category <span className="text-destructive">*</span></FormLabel>
+                              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Category</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="bg-muted/50 rounded-xl h-11 border-border/50">
+                                  <SelectTrigger className="bg-muted/50 rounded-xl h-11 border-border/50 text-foreground font-medium">
                                     <SelectValue placeholder="Select category" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -289,18 +287,18 @@ export default function Finances() {
                       name="animalId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground font-bold">{type === "income" ? "Livestock Sold" : "Flock / Batch (Optional)"} {type === "income" && <span className="text-destructive">*</span>}</FormLabel>
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">{type === "income" ? "Heads Sold" : "Units / Qty"} {type === "income" && <span className="text-destructive">*</span>}</FormLabel>
                           <Select
                             onValueChange={(val) => field.onChange(val === "none" ? null : parseInt(val))}
                             value={field.value?.toString() || "none"}
                           >
                             <FormControl>
-                              <SelectTrigger className="bg-muted/50 rounded-xl h-11 border-border/50">
-                                <SelectValue placeholder={type === "income" ? "Select the livestock batch sold" : "Link to a specific flock"} />
+                              <SelectTrigger className="bg-muted/50 rounded-xl h-11 border-border/50 text-foreground font-medium">
+                                <SelectValue placeholder={type === "income" ? "Select livestock" : "Link to batch"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent className="rounded-xl border-border/50">
-                              <SelectItem value="none">{type === "income" ? "Select a batch..." : "None / General Expense"}</SelectItem>
+                              <SelectItem value="none">{type === "income" ? "Select batch..." : "None / General Expense"}</SelectItem>
                               {animals?.map(a => (
                                 <SelectItem key={a.id} value={a.id.toString()}>{a.name} ({a.species})</SelectItem>
                               ))}
@@ -316,8 +314,8 @@ export default function Finances() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground font-bold">Description <span className="text-destructive">*</span></FormLabel>
-                          <FormControl><Input placeholder={type === "income" ? "e.g. Sold 5 pigs to Market" : "e.g. Bought 10 bags of feed"} {...field} className="bg-muted/50 h-11 rounded-xl border-border/50" /></FormControl>
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Description</FormLabel>
+                          <FormControl><Input placeholder={type === "income" ? "Market sale" : "Supplies purchase"} {...field} className="bg-muted/50 h-11 rounded-xl border-border/50 text-foreground font-medium" /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -329,8 +327,8 @@ export default function Finances() {
                       name="units"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground font-bold">{type === "income" ? "Heads Sold" : "Units / Qty"} <span className="text-destructive">*</span></FormLabel>
-                          <FormControl><Input type="number" step="0.1" {...field} className="bg-muted/30 h-11 rounded-xl border-border/50" /></FormControl>
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">{type === "income" ? "Heads Sold" : "Qty"} <span className="text-destructive">*</span></FormLabel>
+                          <FormControl><Input type="number" step="0.1" {...field} className="bg-muted/50 h-11 rounded-xl border-border/50 text-foreground font-medium" /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -340,22 +338,27 @@ export default function Finances() {
                       name="pricePerUnit"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground font-bold">Price/Unit (₱) <span className="text-destructive">*</span></FormLabel>
-                          <FormControl><Input type="number" step="0.01" {...field} className="bg-muted/30 h-11 rounded-xl border-border/50" /></FormControl>
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Price/Unit (₱) <span className="text-destructive">*</span></FormLabel>
+                          <FormControl><Input type="number" step="0.01" {...field} className="bg-muted/50 h-11 rounded-xl border-border/50 text-foreground font-medium" /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 items-end">
                     <FormField
                       control={form.control}
                       name="amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground font-bold">Total Amount (₱) <span className="text-destructive">*</span></FormLabel>
-                          <FormControl><Input type="number" step="0.01" {...field} className="bg-muted/50 font-bold text-primary h-11 rounded-xl border-border/50" /></FormControl>
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground">Calculated Total (₱)</FormLabel>
+                          <FormControl>
+                            <div className="bg-primary/5 border border-primary/20 rounded-xl h-11 flex items-center px-4 shadow-inner">
+                              <span className="font-display font-black text-primary text-lg">₱{field.value}</span>
+                              <Input type="hidden" {...field} />
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -364,49 +367,44 @@ export default function Finances() {
                       control={form.control}
                       name="date"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground font-bold">Record Date</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value}
-                              onChange={(e) => field.onChange(new Date(e.target.value))}
-                              className="bg-muted/50 h-11 rounded-xl border-border/50"
-                            />
-                          </FormControl>
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-foreground mb-2">Record Date <span className="text-destructive">*</span></FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "h-11 px-4 font-bold border-2 transition-all bg-muted/30 border-border/50 rounded-xl",
+                                    !field.value && "text-muted-foreground",
+                                    field.value && "border-primary text-primary bg-primary/5"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                initialFocus
+                                captionLayout="dropdown-buttons"
+                                fromYear={2020}
+                                toYear={new Date().getFullYear()}
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="note"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground font-bold">Internal Notes</FormLabel>
-                        <FormControl><Input placeholder="Additional details..." {...field} value={field.value || ""} className="bg-muted/50 h-11 rounded-xl border-border/50" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="attachments"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2 text-foreground font-bold">
-                          <Paperclip className="h-4 w-4 text-primary" /> Attachment URLs
-                      </FormLabel>
-                        <FormControl><Input placeholder="Comma separated URLs" {...field} value={field.value || ""} className="bg-muted/50 h-11 rounded-xl border-border/50" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type="submit" className="w-full h-12 text-lg font-bold text-white rounded-xl shadow-lg bg-primary hover:bg-primary/90 mt-4" disabled={mutation.isPending}>
+                  <Button type="submit" className="w-full h-12 text-lg font-black text-white rounded-xl shadow-lg bg-primary hover:bg-primary/90 transition-all uppercase tracking-widest text-xs mt-2" disabled={mutation.isPending}>
                     {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Financial Record
                   </Button>
@@ -421,7 +419,7 @@ export default function Finances() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
         <Card className="hover-elevate bg-primary/5 border-primary/20 shadow-sm overflow-hidden group rounded-2xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Net Balance</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground font-display">Net Balance</CardTitle>
           </CardHeader>
           <CardContent>
             <div className={`text-4xl font-display font-black tracking-tighter ${balance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
@@ -438,7 +436,7 @@ export default function Finances() {
 
         <Card className="hover-elevate border-emerald-500/20 shadow-sm overflow-hidden group rounded-2xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground font-display">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-display font-black tracking-tighter text-emerald-600">₱{totalIncome.toLocaleString()}</div>
@@ -446,14 +444,14 @@ export default function Finances() {
               <div className="h-8 w-8 rounded-full bg-emerald flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform border border-emerald-100">
                 <TrendingUp className="h-4 w-4" />
               </div>
-              <span className="text-xs font-medium">Income Earned</span>
+              <span className="text-xs font-medium font-bold uppercase tracking-widest text-[9px]">Income Earned</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="hover-elevate border-red-500/20 shadow-sm overflow-hidden group rounded-2xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground font-display">Total Expenses</CardTitle>
           </CardHeader>
           <CardContent>
             <div className={`text-4xl font-display font-black tracking-tighter ${totalExpenses > 0 ? "text-red-600" : "text-muted-foreground"}`}>₱{totalExpenses.toLocaleString()}</div>
@@ -461,7 +459,7 @@ export default function Finances() {
               <div className="h-8 w-8 rounded-full bg-red flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform border border-red-100">
                 <TrendingDown className="h-4 w-4" />
               </div>
-              <span className="text-xs font-medium">Operations Cost</span>
+              <span className="text-xs font-medium font-bold uppercase tracking-widest text-[9px]">Operations Cost</span>
             </div>
           </CardContent>
         </Card>
@@ -469,19 +467,19 @@ export default function Finances() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10 flex-1 min-h-0">
         {/* Graph Section */}
-        <Card className="lg:col-span-2 overflow-hidden border-border/50 shadow-md glass-card flex flex-col h-[600px] rounded-2xl">
-          <CardHeader className="bg-muted/10 border-b border-border/50 flex flex-row items-center justify-between shrink-0">
+        <Card className="lg:col-span-2 overflow-hidden border-border/50 shadow-md glass-card flex flex-col h-[600px] rounded-3xl animate-in zoom-in-95 duration-500">
+          <CardHeader className="bg-muted/10 border-b border-border/50 p-8 flex flex-row items-center justify-between shrink-0">
             <div>
-              <CardTitle className="text-xl font-display text-foreground">Performance History</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">Transaction trends and breakdown</p>
+              <CardTitle className="text-2xl font-display font-black uppercase tracking-tight text-foreground">Performance History</CardTitle>
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Transaction trends and breakdown</p>
             </div>
 
             <Tabs value={chartType} onValueChange={(v) => setChartType(v as "bar" | "pie")} className="w-[200px]">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl h-10 p-1 bg-muted/50">
-                <TabsTrigger value="bar" className="flex items-center gap-2 rounded-lg text-xs font-bold uppercase tracking-wider text-muted-foreground data-[state=active]:text-primary">
+              <TabsList className="grid w-full grid-cols-2 rounded-xl h-10 p-1 bg-muted/50 border border-border/50 shadow-inner">
+                <TabsTrigger value="bar" className="flex items-center gap-2 rounded-lg text-xs font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                   <BarChart3 className="h-3 w-3" /> Bar
                 </TabsTrigger>
-                <TabsTrigger value="pie" className="flex items-center gap-2 rounded-lg text-xs font-bold uppercase tracking-wider text-muted-foreground data-[state=active]:text-primary">
+                <TabsTrigger value="pie" className="flex items-center gap-2 rounded-lg text-xs font-black uppercase tracking-widest text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                   <PieChartIcon className="h-3 w-3" /> Pie
                 </TabsTrigger>
               </TabsList>
@@ -498,12 +496,12 @@ export default function Finances() {
                       dataKey="name"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 'bold' }}
                       tickFormatter={(val) => `₱${val.toLocaleString()}`}
                     />
                     <Tooltip
@@ -511,11 +509,11 @@ export default function Finances() {
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           return (
-                            <div className="bg-background border border-border shadow-xl p-3 rounded-xl min-w-[150px]">
-                              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{data.fullDate}</p>
-                              <p className="font-bold text-sm mt-1">{data.description}</p>
-                              <p className={`text-lg font-black mt-2 ${data.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                                ₱{data.amount.toLocaleString()}
+                            <div className="bg-background border border-border shadow-2xl p-4 rounded-2xl min-w-[180px] animate-in zoom-in-95 duration-200">
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-black border-b border-border pb-2 mb-2">{data.fullDate}</p>
+                              <p className="font-black text-xs text-foreground uppercase tracking-tight line-clamp-2">{data.description}</p>
+                              <p className={`text-xl font-display font-black mt-3 ${data.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {data.type === 'income' ? '+' : '-'}₱{data.amount.toLocaleString()}
                               </p>
                             </div>
                           );
@@ -523,9 +521,9 @@ export default function Finances() {
                         return null;
                       }}
                     />
-                    <Bar dataKey="amount" radius={[6, 6, 0, 0]} barSize={40}>
+                    <Bar dataKey="amount" radius={[8, 8, 0, 0]} barSize={32}>
                       {chartData?.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.type === "income" ? "#10b981" : "#ef4444"} />
+                        <Cell key={`cell-${index}`} fill={entry.type === "income" ? "#10b981" : "#ef4444"} className="hover:opacity-80 transition-opacity cursor-pointer" />
                       ))}
                     </Bar>
                   </BarChart>
@@ -537,21 +535,29 @@ export default function Finances() {
                       data={categoryData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={80}
+                      innerRadius={100}
                       outerRadius={160}
-                      paddingAngle={5}
+                      paddingAngle={8}
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      stroke="none"
                     >
                       {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity cursor-pointer shadow-lg" />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{
+                        borderRadius: '20px',
+                        border: 'none',
+                        boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                        padding: '16px',
+                        backgroundColor: 'hsl(var(--background))',
+                        fontWeight: 'bold'
+                      }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
                       formatter={(value: number) => `₱${value.toLocaleString()}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.1em' }}/>
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -560,50 +566,52 @@ export default function Finances() {
         </Card>
 
         {/* Transaction Ledger Section */}
-        <Card className="overflow-hidden border-border/50 shadow-md flex flex-col h-[600px] rounded-2xl bg-card">
-          <CardHeader className="bg-muted/10 border-b border-border/50 flex flex-row items-center justify-between shrink-0 px-6 py-4">
-            <h2 className="text-lg font-bold font-display flex items-center gap-2 text-foreground">
-              <TrendingDown className="h-5 w-5 text-primary/60" />
-              Ledger
-            </h2>
-            <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest bg-muted px-3 py-1 rounded-full border border-border/50">
-              {filteredTransactions?.length || 0} items
+        <Card className="overflow-hidden border-border/50 shadow-md flex flex-col h-[600px] rounded-3xl bg-card animate-in slide-in-from-right duration-500">
+          <CardHeader className="bg-muted/10 border-b border-border/50 p-8 flex flex-row items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <ReceiptText className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-xl font-display font-black uppercase tracking-tight text-foreground">Ledger</h2>
+            </div>
+            <div className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] bg-muted/50 px-4 py-1.5 rounded-full border border-border/50 shadow-inner">
+              {filteredTransactions?.length || 0} RECORDS
             </div>
           </CardHeader>
           <CardContent className="p-0 flex-1 overflow-hidden">
             <ScrollArea className="h-full scrollbar-hide">
-              <div className="divide-y divide-border/50">
+              <div className="divide-y divide-border/30">
                 {filteredTransactions?.map((t) => (
-                  <div key={t.id} className="group hover:bg-muted/30 flex items-center justify-between p-4 transition-all border-l-4 border-transparent hover:border-primary/30">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 shadow-inner ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                        {t.type === 'income' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  <div key={t.id} className="group hover:bg-muted/20 flex items-center justify-between p-6 transition-all border-l-4 border-transparent hover:border-primary/40 relative overflow-hidden">
+                    <div className="flex items-center gap-4 min-w-0 relative z-10">
+                      <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110 ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                        {t.type === 'income' ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate uppercase tracking-tighter">{t.description}</p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
-                          <span className="uppercase font-bold text-muted-foreground/70">{t.category}</span>
-                          <span>•</span>
+                      <div className="min-w-0 space-y-1">
+                        <p className="font-black text-sm text-foreground group-hover:text-primary transition-colors truncate uppercase tracking-tight">{t.description}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                          <span className="bg-muted px-2 py-0.5 rounded-md border border-border/50">{t.category}</span>
+                          <span className="text-muted-foreground/30">•</span>
                           <span>{format(new Date(t.date), "MMM d")}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0 ml-2">
-                      <div className={`text-base font-display font-black tracking-tighter ${t.type === "income" ? "text-emerald-600" : "text-red-600"}`}>
-                        ₱{parseFloat(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <div className="text-right shrink-0 ml-4 relative z-10">
+                      <div className={`text-lg font-display font-black tracking-tighter ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {t.type === 'income' ? '+' : '-'}₱{parseFloat(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>
                 ))}
                 {filteredTransactions.length === 0 && (
-                  <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-4 h-full">
-                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center opacity-50 border border-border/50 shadow-inner">
-                      <X className="h-8 w-8" />
+                  <div className="p-20 text-center text-muted-foreground flex flex-col items-center justify-center gap-6 h-full animate-pulse">
+                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center border border-border/50 shadow-inner">
+                      <X className="h-10 w-10 opacity-30" />
                     </div>
-                    <div>
-                      <p className="font-black text-sm uppercase tracking-widest text-foreground">No records found</p>
-                      <p className="text-xs mt-1 italic">Try a different date filter</p>
+                    <div className="space-y-2">
+                      <p className="font-black text-sm uppercase tracking-[0.2em] text-foreground">Audit Clear</p>
+                      <p className="text-xs font-bold italic opacity-60">No financial footprints found</p>
                     </div>
                   </div>
                 )}

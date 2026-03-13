@@ -3,10 +3,10 @@ import {
   animals,
   observations,
   transactions,
-  feeds,
   users,
   categories,
   feedInventory,
+  medicalSupplies,
   type Animal,
   type InsertAnimal,
   type UpdateAnimalRequest,
@@ -15,16 +15,16 @@ import {
   type AnimalWithObservations,
   type Transaction,
   type InsertTransaction,
-  type Feed,
-  type InsertFeed,
   type User,
   type InsertUser,
   type Category,
   type InsertCategory,
   type FeedInventory,
-  type InsertFeedInventory
+  type InsertFeedInventory,
+  type MedicalSupply,
+  type InsertMedicalSupply
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getAnimals(): Promise<Animal[]>;
@@ -39,9 +39,6 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   deleteTransaction(id: number): Promise<boolean>;
 
-  getFeeds(): Promise<(Feed & { animal?: Animal })[]>;
-  createFeed(animalId: number, feed: InsertFeed): Promise<Feed>;
-
   getUsers(): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -52,11 +49,17 @@ export interface IStorage {
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
   deleteCategory(id: number): Promise<boolean>;
+  updateCategoryType(oldType: string, newType: string): Promise<boolean>;
 
   getFeedInventory(): Promise<FeedInventory[]>;
   updateFeedStock(id: number, quantity: string): Promise<FeedInventory | undefined>;
   createFeedInventory(item: InsertFeedInventory): Promise<FeedInventory>;
   deleteFeedInventory(id: number): Promise<boolean>;
+
+  getMedicalSupplies(): Promise<MedicalSupply[]>;
+  createMedicalSupply(item: InsertMedicalSupply): Promise<MedicalSupply>;
+  updateMedicalSupply(id: number, updates: Partial<InsertMedicalSupply>): Promise<MedicalSupply | undefined>;
+  deleteMedicalSupply(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -69,13 +72,11 @@ export class DatabaseStorage implements IStorage {
     if (animalRows.length === 0) return undefined;
     
     const obsRows = await db.select().from(observations).where(eq(observations.animalId, id)).orderBy(desc(observations.observedAt));
-    const feedRows = await db.select().from(feeds).where(eq(feeds.animalId, id)).orderBy(desc(feeds.fedAt));
     const transactionRows = await db.select().from(transactions).where(eq(transactions.animalId, id)).orderBy(desc(transactions.date));
     
     return {
       ...animalRows[0],
       observations: obsRows,
-      feeds: feedRows,
       transactions: transactionRows
     };
   }
@@ -168,51 +169,6 @@ export class DatabaseStorage implements IStorage {
     return !!deleted;
   }
 
-  async getFeeds(): Promise<(Feed & { animal?: Animal })[]> {
-    const rows = await db.select({
-      feed: feeds,
-      animal: animals
-    })
-    .from(feeds)
-    .leftJoin(animals, eq(feeds.animalId, animals.id))
-    .orderBy(desc(feeds.fedAt));
-
-    return rows.map(r => ({
-      ...r.feed,
-      animal: r.animal || undefined
-    }));
-  }
-
-  async createFeed(animalId: number, insertFeed: InsertFeed): Promise<Feed> {
-    const [feed] = await db.insert(feeds).values({ ...insertFeed, animalId }).returning();
-    
-    // Update inventory if it exists
-    const inventory = await db.select().from(feedInventory).where(eq(feedInventory.name, insertFeed.foodType));
-    if (inventory.length > 0) {
-      const currentQty = parseFloat(inventory[0].quantity);
-      const consumedQty = parseFloat(insertFeed.quantity);
-      const newQty = Math.max(0, currentQty - consumedQty).toString();
-
-      await db.update(feedInventory)
-        .set({ quantity: newQty, updatedAt: new Date() })
-        .where(eq(feedInventory.id, inventory[0].id));
-    }
-
-    // Automatically create a transaction for the feed cost
-    await db.insert(transactions).values({
-      animalId,
-      description: `Feed: ${insertFeed.foodType}`,
-      amount: insertFeed.totalCost,
-      type: "expense",
-      category: "feed",
-      units: insertFeed.quantity,
-      pricePerUnit: insertFeed.pricePerUnit,
-      date: feed.fedAt
-    });
-
-    return feed;
-  }
-
   async getUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.updatedAt));
   }
@@ -259,6 +215,14 @@ export class DatabaseStorage implements IStorage {
     return !!deleted;
   }
 
+  async updateCategoryType(oldType: string, newType: string): Promise<boolean> {
+    const result = await db.update(categories)
+      .set({ type: newType })
+      .where(eq(categories.type, oldType))
+      .returning();
+    return result.length > 0;
+  }
+
   async getFeedInventory(): Promise<FeedInventory[]> {
     return await db.select().from(feedInventory).orderBy(desc(feedInventory.updatedAt));
   }
@@ -278,6 +242,31 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFeedInventory(id: number): Promise<boolean> {
     const [deleted] = await db.delete(feedInventory).where(eq(feedInventory.id, id)).returning();
+    return !!deleted;
+  }
+
+  async getMedicalSupplies(): Promise<MedicalSupply[]> {
+    return await db.select().from(medicalSupplies).orderBy(desc(medicalSupplies.updatedAt));
+  }
+
+  async createMedicalSupply(item: InsertMedicalSupply): Promise<MedicalSupply> {
+    const [newItem] = await db.insert(medicalSupplies).values({
+      ...item,
+      expirationDate: item.expirationDate ? new Date(item.expirationDate) : null,
+    }).returning();
+    return newItem;
+  }
+
+  async updateMedicalSupply(id: number, updates: Partial<InsertMedicalSupply>): Promise<MedicalSupply | undefined> {
+    const [updated] = await db.update(medicalSupplies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(medicalSupplies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMedicalSupply(id: number): Promise<boolean> {
+    const [deleted] = await db.delete(medicalSupplies).where(eq(medicalSupplies.id, id)).returning();
     return !!deleted;
   }
 }
